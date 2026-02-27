@@ -1,0 +1,1506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>FleetOS | alt. — NSL Graveyard Audit</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@400;500;600&display=swap');
+
+:root {
+  --navy: #1B3A8C;
+  --navy-dark: #122870;
+  --navy-light: #2548B0;
+  --navy-bg: #EEF2FF;
+  --navy-border: #BFD0F0;
+  --yellow: #F5D000;
+  --white: #FFFFFF;
+  --gray-50: #F8F9FC;
+  --gray-100: #F1F3F9;
+  --gray-200: #E3E7F0;
+  --gray-300: #C9D1E5;
+  --gray-400: #9AA4BF;
+  --gray-500: #6B75A0;
+  --gray-700: #374068;
+  --gray-900: #111827;
+  --red: #DC2626;
+  --red-bg: #FEE2E2;
+  --green: #16A34A;
+  --green-bg: #DCFCE7;
+  --orange: #D97706;
+  --orange-bg: #FEF3C7;
+  --purple: #7C3AED;
+  --purple-bg: #EDE9FE;
+  --font: 'DM Sans', sans-serif;
+  --mono: 'DM Mono', monospace;
+  --radius: 14px;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+
+body {
+  background: #94A3B8;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  min-height: 100vh;
+  font-family: var(--font);
+  padding: 32px 16px 48px;
+}
+
+/* ── Phone Shell ── */
+.shell {
+  width: 390px;
+  background: var(--white);
+  border-radius: 50px;
+  box-shadow: 0 0 0 10px #1C1C1E, 0 0 0 12px #3A3A3C, 0 50px 100px rgba(0,0,0,0.6);
+  overflow: hidden;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 844px;
+}
+
+.notch-bar {
+  background: var(--white);
+  padding: 14px 24px 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.time { font-size: 15px; font-weight: 700; color: var(--gray-900); }
+.icons { display:flex; gap:5px; font-size:13px; }
+
+/* ── Screen System ── */
+.screen {
+  display: none;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
+  position: absolute;
+  inset: 0;
+  padding-top: 54px; /* notch height */
+}
+
+.screen.active {
+  display: flex;
+  animation: slideIn 0.3s cubic-bezier(0.4,0,0.2,1);
+}
+
+.screen.back {
+  display: flex;
+  animation: slideBack 0.3s cubic-bezier(0.4,0,0.2,1);
+}
+
+@keyframes slideIn { from { transform: translateX(100%); opacity:0; } to { transform: translateX(0); opacity:1; } }
+@keyframes slideBack { from { transform: translateX(-30%); opacity:0; } to { transform: translateX(0); opacity:1; } }
+
+/* ── App Bar ── */
+.app-bar {
+  display: flex;
+  align-items: center;
+  padding: 10px 20px 10px;
+  gap: 12px;
+  border-bottom: 1px solid var(--gray-100);
+  background: var(--white);
+  flex-shrink: 0;
+  z-index: 10;
+}
+
+.app-bar.navy-bar { background: var(--navy); border-bottom: none; }
+
+.back-btn {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  background: var(--gray-100);
+  border: none;
+  font-size: 18px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  color: var(--gray-700);
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+.back-btn:active { background: var(--gray-200); transform: scale(0.93); }
+.back-btn.w { background: rgba(255,255,255,0.15); color: white; }
+
+.bar-title { font-size: 16px; font-weight: 700; color: var(--gray-900); flex:1; }
+.bar-title.w { color: white; }
+
+.bar-right { font-size: 12px; color: var(--gray-400); font-family: var(--mono); flex-shrink:0; }
+
+/* ── Scroll Container ── */
+.scroller {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  background: var(--gray-50);
+}
+.scroller::-webkit-scrollbar { display: none; }
+
+/* ── FAB ── */
+.fab {
+  position: absolute;
+  bottom: 88px;
+  right: 24px;
+  width: 56px; height: 56px;
+  border-radius: 50%;
+  background: var(--navy);
+  color: white;
+  font-size: 28px;
+  border: none;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 6px 20px rgba(27,58,140,0.4);
+  z-index: 20;
+  transition: transform 0.15s, box-shadow 0.15s;
+  font-weight: 300;
+  line-height: 1;
+}
+.fab:active { transform: scale(0.92); box-shadow: 0 3px 10px rgba(27,58,140,0.3); }
+
+/* ── Bottom Nav ── */
+.bottom-nav {
+  display: flex;
+  background: var(--white);
+  border-top: 1px solid var(--gray-200);
+  padding: 8px 0 22px;
+  flex-shrink: 0;
+}
+
+.nav-item {
+  flex: 1;
+  display: flex; flex-direction: column; align-items: center;
+  gap: 2px;
+  cursor: pointer;
+  padding: 4px 0;
+}
+
+.nav-icon { font-size: 22px; }
+.nav-lbl { font-size: 10px; font-weight: 500; color: var(--gray-400); }
+.nav-item.active .nav-lbl { color: var(--navy); font-weight: 700; }
+
+/* ── Home Screen ── */
+.logo-row {
+  display: flex; align-items: center;
+  padding: 20px 20px 16px;
+}
+.logo-fleet { font-size: 22px; font-weight: 800; color: var(--gray-900); letter-spacing: -0.5px; }
+.logo-sep { width:1px; height:20px; background:var(--gray-300); margin:0 8px; }
+.logo-alt { font-size: 18px; font-weight: 800; color: var(--navy); }
+.logo-alt-dot { color: #D4B000; }
+
+.greeting-box { padding: 0 20px 20px; }
+.greeting { font-size: 14px; color: var(--gray-500); margin-bottom: 4px; }
+.greeting strong { color: var(--gray-900); }
+.page-title { font-size: 24px; font-weight: 800; color: var(--gray-900); letter-spacing: -0.4px; }
+
+.app-tiles { display:flex; flex-direction:column; gap:12px; padding:0 20px; }
+
+.tile {
+  background: var(--navy);
+  border-radius: 18px;
+  overflow: hidden;
+  cursor: pointer;
+  position: relative;
+  box-shadow: 0 4px 16px rgba(27,58,140,0.25);
+  transition: transform 0.15s;
+  border: none;
+  width: 100%;
+  text-align: left;
+}
+.tile:active { transform: scale(0.97); }
+.tile.dim { opacity: 0.55; cursor: default; }
+
+.tile-accent { position:absolute; left:0; top:0; bottom:0; width:5px; background:var(--yellow); }
+
+.tile-inner {
+  display: flex; align-items: center;
+  gap: 14px;
+  padding: 20px 18px 20px 22px;
+}
+
+.tile-icon {
+  width: 46px; height: 46px;
+  background: rgba(255,255,255,0.12);
+  border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px;
+  flex-shrink: 0;
+}
+
+.tile-name { font-size: 18px; font-weight: 700; color: white; letter-spacing: -0.2px; }
+.tile-sub { font-size: 11px; color: rgba(255,255,255,0.5); margin-top: 2px; }
+.tile-arr { color: rgba(255,255,255,0.35); font-size: 20px; margin-left: auto; }
+
+.alert-pill {
+  margin: 16px 20px 8px;
+  background: #FEF2F2;
+  border: 1px solid #FCA5A5;
+  border-radius: 12px;
+  padding: 12px 14px;
+  display: flex; gap: 10px; align-items: center;
+}
+.alert-pill-text { font-size: 12px; }
+.alert-pill-title { font-weight: 700; color: var(--red); }
+.alert-pill-sub { color: var(--gray-500); margin-top: 1px; }
+
+/* ── Audit List Screen ── */
+.audit-hero {
+  background: var(--navy);
+  padding: 16px 20px 24px;
+}
+.hero-greet { font-size: 12px; color: rgba(255,255,255,0.5); margin-bottom: 4px; }
+.hero-title { font-size: 20px; font-weight: 800; color: white; letter-spacing: -0.3px; }
+
+.stat-row {
+  display: flex; gap: 10px;
+  padding: 14px 20px 0;
+  background: var(--navy);
+}
+
+.stat-pill {
+  flex: 1;
+  background: rgba(255,255,255,0.12);
+  border-radius: 12px;
+  padding: 10px 8px;
+  text-align: center;
+}
+.sp-val { font-size: 22px; font-weight: 800; color: white; line-height:1; }
+.sp-lbl { font-size: 10px; color: rgba(255,255,255,0.5); margin-top: 2px; font-weight: 500; }
+
+.wave {
+  background: var(--navy);
+  padding-bottom: 20px;
+}
+.wave-inner {
+  background: var(--gray-50);
+  border-radius: 22px 22px 0 0;
+  min-height: 100px;
+}
+
+.sec-header {
+  padding: 16px 20px 8px;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.sec-title { font-size: 14px; font-weight: 700; color: var(--gray-900); }
+.sec-link { font-size: 12px; color: var(--navy); font-weight: 600; }
+
+.audit-card {
+  margin: 0 20px 10px;
+  background: var(--white);
+  border: 1.5px solid var(--gray-200);
+  border-radius: 16px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform 0.12s;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+}
+.audit-card:active { transform: scale(0.98); }
+.audit-card.risk { border-color: #FCA5A5; }
+
+.ac-top { padding: 13px 14px 9px; display:flex; justify-content:space-between; align-items:flex-start; }
+.ac-name { font-size: 15px; font-weight: 700; color: var(--gray-900); }
+.ac-addr { font-size: 11px; color: var(--gray-400); margin-top: 2px; }
+.ac-bottom { background: var(--gray-50); border-top: 1px solid var(--gray-100); padding: 8px 14px; display:flex; justify-content:space-between; align-items:center; }
+.ac-meta { font-size: 11px; color: var(--gray-500); }
+
+.badge {
+  font-size: 10px; font-weight: 700;
+  padding: 3px 8px; border-radius: 20px;
+  font-family: var(--mono);
+  white-space: nowrap;
+}
+.b-red { background: var(--red-bg); color: var(--red); }
+.b-orange { background: var(--orange-bg); color: var(--orange); }
+.b-green { background: var(--green-bg); color: var(--green); }
+.b-navy { background: var(--navy-bg); color: var(--navy); }
+.b-purple { background: var(--purple-bg); color: var(--purple); }
+
+/* ── Form Common ── */
+.form-body { padding: 16px 20px 0; }
+
+.f-section {
+  display: flex; align-items: center; gap: 8px;
+  margin-bottom: 12px; margin-top: 20px;
+}
+.f-section:first-child { margin-top: 0; }
+.f-sec-label {
+  font-size: 10px; font-weight: 700; font-family: var(--mono);
+  color: var(--navy); text-transform: uppercase; letter-spacing: 1px;
+  white-space: nowrap;
+}
+.f-sec-line { flex:1; height:1px; background: var(--navy-border); opacity:0.5; }
+
+.f-group { margin-bottom: 12px; }
+.f-label { font-size: 12px; color: var(--gray-500); font-weight: 500; margin-bottom: 5px; }
+.f-label span { color: var(--red); } /* required star */
+
+.f-input {
+  width: 100%;
+  background: var(--white);
+  border: 1.5px solid var(--gray-200);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  font-size: 14px;
+  color: var(--gray-900);
+  font-family: var(--font);
+  outline: none;
+  transition: border-color 0.15s;
+}
+.f-input:focus { border-color: var(--navy); }
+.f-input::placeholder { color: var(--gray-300); }
+
+.f-select {
+  width: 100%;
+  background: var(--white);
+  border: 1.5px solid var(--gray-200);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  font-size: 14px;
+  color: var(--gray-900);
+  font-family: var(--font);
+  outline: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%239AA4BF' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  padding-right: 36px;
+  cursor: pointer;
+}
+.f-select:focus { border-color: var(--navy); }
+
+.f-combo {
+  position: relative;
+}
+.f-combo .f-input { padding-right: 44px; }
+.f-combo-arrow {
+  position: absolute;
+  right: 14px; top: 50%;
+  transform: translateY(-50%);
+  color: var(--gray-300);
+  font-size: 11px;
+  pointer-events: none;
+}
+
+/* ── NSL Tag Highlight ── */
+.nsl-selected-banner {
+  background: var(--purple-bg);
+  border: 1.5px solid var(--purple);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  display: flex; gap: 10px; align-items: center;
+  margin-bottom: 14px;
+}
+.nsb-icon { font-size: 20px; }
+.nsb-title { font-size: 13px; font-weight: 700; color: var(--purple); }
+.nsb-sub { font-size: 11px; color: var(--gray-500); margin-top: 1px; }
+
+.geo-box {
+  background: var(--navy-bg);
+  border: 1.5px solid var(--navy-border);
+  border-radius: var(--radius);
+  padding: 11px 14px;
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 10px;
+}
+.geo-dot { width:8px; height:8px; border-radius:50%; background:var(--green); animation:pulse 1.4s infinite; flex-shrink:0; }
+@keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.4;transform:scale(0.8)} }
+.geo-val { font-family: var(--mono); font-size: 11px; color: var(--navy); font-weight: 600; }
+.geo-lbl { font-size: 10px; color: var(--gray-400); margin-top: 2px; }
+
+/* ── Photo Component ── */
+.photo-comp {
+  background: var(--white);
+  border: 1.5px dashed var(--gray-300);
+  border-radius: var(--radius);
+  padding: 16px;
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.photo-comp:active { background: var(--gray-100); }
+.photo-comp.done { border-style: solid; border-color: var(--green); background: var(--green-bg); }
+.pc-icon { font-size: 28px; }
+.pc-title { font-size: 13px; font-weight: 700; color: var(--gray-500); }
+.pc-sub { font-size: 11px; color: var(--gray-400); }
+.photo-comp.done .pc-title { color: var(--green); }
+.photo-comp.done .pc-sub { color: var(--green); opacity: 0.7; }
+
+.photo-grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:12px; }
+
+.mini-photo {
+  background: var(--white);
+  border: 1.5px dashed var(--gray-200);
+  border-radius: 12px;
+  height: 80px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 4px; cursor: pointer; position: relative;
+  transition: all 0.15s;
+}
+.mini-photo:active { background: var(--gray-100); }
+.mini-photo.done { border-style:solid; border-color:var(--green); background:var(--green-bg); }
+.mp-icon { font-size: 22px; }
+.mp-lbl { font-size: 9px; color: var(--gray-400); font-weight: 600; text-align:center; line-height:1.3; }
+.mini-photo.done .mp-lbl { color: var(--green); }
+.mp-check {
+  position: absolute; top:5px; right:5px;
+  width:16px; height:16px; background:var(--green);
+  border-radius:50%; display:flex; align-items:center; justify-content:center;
+  font-size:9px; color:white; font-weight:800;
+}
+
+/* ── Media Preview Thumbnails ── */
+.media-preview-row {
+  margin-top: 4px;
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  padding: 2px 0;
+}
+.media-thumb {
+  width: 52px;
+  height: 52px;
+  border-radius: 10px;
+  object-fit: cover;
+  border: 1px solid var(--gray-200);
+  background: var(--gray-100);
+}
+.media-video-thumb {
+  width: 100%;
+  max-height: 120px;
+  border-radius: 12px;
+  border: 1px solid var(--gray-200);
+  background: var(--gray-100);
+}
+
+/* ── Video Component ── */
+.video-comp {
+  background: var(--white);
+  border: 1.5px dashed var(--orange);
+  border-radius: var(--radius);
+  padding: 16px 14px;
+  display: flex; align-items: center; gap: 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.video-comp:active { opacity: 0.8; }
+.video-comp.done { border-style:solid; border-color:var(--green); background:var(--green-bg); }
+.vc-icon { font-size: 30px; flex-shrink: 0; }
+.vc-title { font-size: 13px; font-weight: 700; color: var(--orange); }
+.video-comp.done .vc-title { color: var(--green); }
+.vc-sub { font-size: 11px; color: var(--gray-400); margin-top: 2px; }
+
+/* ── Radio / Toggle ── */
+.radio-group { display:flex; flex-direction:column; gap:8px; }
+.radio-row {
+  display: flex; align-items: center; gap: 12px;
+  background: var(--white);
+  border: 1.5px solid var(--gray-200);
+  border-radius: 12px;
+  padding: 12px 14px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.radio-row:active { background: var(--gray-100); }
+.radio-row.sel { border-color: var(--navy); background: var(--navy-bg); }
+.radio-circle {
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  border: 2px solid var(--gray-300);
+  flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.15s;
+}
+.radio-row.sel .radio-circle { border-color: var(--navy); background: var(--navy); }
+.radio-circle::after { content:''; width:8px; height:8px; border-radius:50%; background:white; display:none; }
+.radio-row.sel .radio-circle::after { display:block; }
+.radio-label { font-size: 14px; font-weight: 500; color: var(--gray-700); }
+.radio-row.sel .radio-label { color: var(--navy); font-weight: 600; }
+
+/* inline pair */
+.toggle-pair { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.tog {
+  border: 1.5px solid var(--gray-200);
+  border-radius: 12px;
+  padding: 10px;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--gray-400);
+  cursor: pointer;
+  background: var(--white);
+  transition: all 0.15s;
+  user-select: none;
+}
+.tog:active { transform: scale(0.96); }
+.tog.yes { border-color: var(--green); color: var(--green); background: var(--green-bg); }
+.tog.no { border-color: var(--red); color: var(--red); background: var(--red-bg); }
+.tog.sel { border-color: var(--navy); color: var(--navy); background: var(--navy-bg); }
+
+/* checkbox style for mixed */
+.check-row2 {
+  display: flex; align-items: center; gap: 12px;
+  background: var(--white);
+  border: 1.5px solid var(--gray-200);
+  border-radius: 12px;
+  padding: 11px 14px;
+  cursor: pointer;
+  transition: all 0.15s;
+  margin-bottom: 8px;
+}
+.check-row2.sel { border-color: var(--navy); background: var(--navy-bg); }
+.chkbox {
+  width: 20px; height: 20px;
+  border: 2px solid var(--gray-300);
+  border-radius: 5px;
+  flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 800; color: transparent;
+  transition: all 0.15s;
+}
+.check-row2.sel .chkbox { border-color: var(--navy); background: var(--navy); color: white; }
+.chk-label { font-size: 14px; font-weight: 500; color: var(--gray-700); }
+.check-row2.sel .chk-label { color: var(--navy); font-weight: 600; }
+
+/* count input inline */
+.count-input-row {
+  display:flex; align-items:center; gap:10px;
+  margin-top: 6px; margin-bottom: 4px;
+  padding: 0 4px;
+}
+.count-label { font-size:12px; color:var(--gray-500); flex:1; }
+.counter {
+  display:flex; align-items:center; gap:0;
+  background:var(--gray-100); border-radius:10px; overflow:hidden;
+}
+.cnt-btn {
+  width:34px; height:34px;
+  background:none; border:none;
+  font-size:20px; color:var(--navy);
+  display:flex; align-items:center; justify-content:center;
+  cursor:pointer; font-weight:700;
+}
+.cnt-btn:active { background: var(--gray-200); }
+.cnt-val { font-size:15px; font-weight:700; color:var(--gray-900); min-width:30px; text-align:center; }
+
+/* ── Autocomplete Dropdown ── */
+.autocomplete-wrap { position:relative; }
+.autocomplete-list {
+  position:absolute; top:calc(100% + 4px); left:0; right:0;
+  background:white; border:1.5px solid var(--navy-border);
+  border-radius: var(--radius); overflow:hidden;
+  z-index:100; box-shadow:0 8px 24px rgba(0,0,0,0.12);
+}
+.ac-item {
+  padding: 11px 14px;
+  font-size: 14px;
+  color: var(--gray-700);
+  cursor:pointer;
+  border-bottom: 1px solid var(--gray-100);
+  transition: background 0.1s;
+}
+.ac-item:last-child { border-bottom:none; }
+.ac-item:active, .ac-item:hover { background: var(--navy-bg); color: var(--navy); }
+.ac-item strong { color:var(--navy); }
+
+/* ── Buttons ── */
+.btn {
+  display:block;
+  width: calc(100% - 0px);
+  padding: 14px;
+  border-radius: var(--radius);
+  font-size: 15px; font-weight: 700;
+  text-align: center;
+  cursor: pointer;
+  border: none;
+  font-family: var(--font);
+  transition: transform 0.12s;
+  letter-spacing: -0.1px;
+}
+.btn:active { transform: scale(0.97); }
+.btn-navy { background: var(--navy); color: white; box-shadow: 0 4px 14px rgba(27,58,140,0.3); }
+.btn-outline { background: transparent; color: var(--navy); border: 1.5px solid var(--navy-border); }
+.btn-green { background: var(--green); color: white; box-shadow: 0 4px 14px rgba(22,163,74,0.3); }
+
+.btn-row { padding: 14px 20px; display:flex; flex-direction:column; gap:8px; background:var(--white); border-top:1px solid var(--gray-100); flex-shrink:0; }
+
+/* ── Progress ── */
+.progress-bar-wrap { padding: 10px 20px 0; }
+.pb-meta { display:flex; justify-content:space-between; font-size:11px; color:var(--gray-400); margin-bottom:5px; }
+.pb-track { background:var(--gray-100); border-radius:4px; height:4px; overflow:hidden; }
+.pb-fill { height:100%; border-radius:4px; background:var(--navy); transition:width 0.4s; }
+
+/* ── Inline Alert ── */
+.in-alert {
+  display:flex; gap:10px;
+  border-radius: var(--radius);
+  padding: 11px 13px;
+  margin-bottom: 12px;
+}
+.in-alert.red { background:var(--red-bg); border:1px solid #FCA5A5; }
+.in-alert.navy { background:var(--navy-bg); border:1px solid var(--navy-border); }
+.in-alert.orange { background:var(--orange-bg); border:1px solid #FDE68A; }
+.ia-ico { font-size:16px; flex-shrink:0; margin-top:1px; }
+.ia-t { font-size:12px; font-weight:700; color:var(--gray-900); margin-bottom:2px; }
+.ia-b { font-size:11px; color:var(--gray-500); line-height:1.5; }
+
+/* ── Success ── */
+.success-wrap {
+  flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center;
+  padding: 32px 24px; text-align:center;
+}
+.suc-ring { width:88px; height:88px; border-radius:50%; background:var(--green-bg); display:flex; align-items:center; justify-content:center; font-size:44px; margin-bottom:20px; }
+.suc-title { font-size:24px; font-weight:800; color:var(--gray-900); margin-bottom:8px; letter-spacing:-0.4px; }
+.suc-id { font-family:var(--mono); font-size:12px; color:var(--green); background:var(--green-bg); padding:4px 12px; border-radius:6px; display:inline-block; margin-bottom:14px; }
+.suc-body { font-size:13px; color:var(--gray-400); line-height:1.7; }
+
+.dispatch-box {
+  background:var(--gray-50); border:1px solid var(--gray-200);
+  border-radius:var(--radius); padding:14px; width:100%; text-align:left; margin-top:20px;
+}
+.db-title { font-size:10px; font-weight:700; color:var(--gray-400); text-transform:uppercase; letter-spacing:1px; font-family:var(--mono); margin-bottom:10px; }
+.db-row { display:flex; align-items:center; gap:8px; font-size:13px; color:var(--gray-700); padding:6px 0; border-bottom:1px solid var(--gray-100); }
+.db-row:last-child { border-bottom:none; }
+
+/* ── Spacer ── */
+.pb { padding-bottom: 20px; }
+</style>
+</head>
+<body>
+
+<div class="shell">
+  <!-- Status Bar (always visible) -->
+  <div class="notch-bar" style="position:absolute;top:0;left:0;right:0;z-index:50;background:transparent;">
+    <span class="time">9:41</span>
+    <div class="icons"><span>●●●</span><span>WiFi</span><span>🔋</span></div>
+  </div>
+
+  <!-- ═══════════════════════════════════════ -->
+  <!-- SCREEN 0: HOME -->
+  <!-- ═══════════════════════════════════════ -->
+  <div class="screen active" id="s0">
+    <div class="scroller" style="background:var(--white);">
+      <div class="logo-row" style="padding-top:8px;">
+        <span class="logo-fleet">FleetOS</span>
+        <div class="logo-sep"></div>
+        <span class="logo-alt">alt<span class="logo-alt-dot">.</span></span>
+      </div>
+
+      <div class="greeting-box">
+        <div class="greeting">Hi <strong>Nikhil Kumar</strong>, <em>welcome back!</em></div>
+        <div class="page-title">Select an Application</div>
+      </div>
+
+      <div class="app-tiles">
+        <button class="tile" onclick="go('s1')">
+          <div class="tile-accent"></div>
+          <div class="tile-inner">
+            <div class="tile-icon">📋</div>
+            <div>
+              <div class="tile-name">Audit</div>
+              <div class="tile-sub">NSL · Field Verification</div>
+            </div>
+            <span class="tile-arr">›</span>
+          </div>
+        </button>
+        <button class="tile dim">
+          <div class="tile-accent" style="background:var(--gray-300);"></div>
+          <div class="tile-inner">
+            <div class="tile-icon">📄</div>
+            <div><div class="tile-name">PDI</div><div class="tile-sub">Pre-delivery Inspection</div></div>
+            <span class="tile-arr">›</span>
+          </div>
+        </button>
+        <button class="tile dim">
+          <div class="tile-accent" style="background:var(--gray-300);"></div>
+          <div class="tile-inner">
+            <div class="tile-icon">🔍</div>
+            <div><div class="tile-name">Inspection</div><div class="tile-sub">On-ground Vehicle Check</div></div>
+            <span class="tile-arr">›</span>
+          </div>
+        </button>
+      </div>
+
+      <div class="alert-pill" style="margin-top:20px;">
+        <span style="font-size:22px;">⚠️</span>
+        <div class="alert-pill-text">
+          <div class="alert-pill-title">1 Risk Location Pending</div>
+          <div class="alert-pill-sub">Graveyard audit required · NSL tags available</div>
+        </div>
+      </div>
+      <div class="pb"></div>
+    </div>
+
+    <div class="bottom-nav">
+      <div class="nav-item active"><div class="nav-icon">🏠</div><div class="nav-lbl">Home</div></div>
+      <div class="nav-item"><div class="nav-icon">🗺️</div><div class="nav-lbl">Map</div></div>
+      <div class="nav-item"><div class="nav-icon">📊</div><div class="nav-lbl">Reports</div></div>
+      <div class="nav-item"><div class="nav-icon">👤</div><div class="nav-lbl">Profile</div></div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════ -->
+  <!-- SCREEN 1: AUDIT LIST -->
+  <!-- ═══════════════════════════════════════ -->
+  <div class="screen" id="s1">
+    <div class="app-bar navy-bar">
+      <button class="back-btn w" onclick="goBack('s0')">←</button>
+      <span class="bar-title w">Audit</span>
+      <span style="font-size:20px; color:rgba(255,255,255,0.5);">🔔</span>
+    </div>
+
+    <div class="scroller" style="background:var(--navy);">
+      <div class="stat-row">
+        <div class="stat-pill"><div class="sp-val">8</div><div class="sp-lbl">Assigned</div></div>
+        <div class="stat-pill"><div class="sp-val" style="color:#FCA5A5;">1</div><div class="sp-lbl">Risk Sites</div></div>
+        <div class="stat-pill"><div class="sp-val" style="color:#86EFAC;">4</div><div class="sp-lbl">Completed</div></div>
+      </div>
+
+      <div class="wave" style="margin-top:16px;">
+        <div class="wave-inner">
+          <div class="pb" style="padding-bottom:80px;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FAB -->
+    <button class="fab" onclick="go('s2')" title="New Audit">+</button>
+
+    <div class="bottom-nav">
+      <div class="nav-item active"><div class="nav-icon">📋</div><div class="nav-lbl">Audits</div></div>
+      <div class="nav-item"><div class="nav-icon">🗺️</div><div class="nav-lbl">Map</div></div>
+      <div class="nav-item"><div class="nav-icon">📊</div><div class="nav-lbl">Reports</div></div>
+      <div class="nav-item"><div class="nav-icon">👤</div><div class="nav-lbl">Profile</div></div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════ -->
+  <!-- SCREEN 2: AUDIT PAGE 1 — Vehicle ID + NSL Tag + Location -->
+  <!-- ═══════════════════════════════════════ -->
+  <div class="screen" id="s2">
+    <div class="app-bar">
+      <button class="back-btn" onclick="goBack('s1')">←</button>
+      <span class="bar-title">New Audit</span>
+      <span class="bar-right">Step 1/2</span>
+    </div>
+
+    <div class="progress-bar-wrap">
+      <div class="pb-meta"><span>Vehicle Identification & Location</span><span>1 of 2</span></div>
+      <div class="pb-track"><div class="pb-fill" style="width:50%;"></div></div>
+    </div>
+
+    <div class="scroller">
+      <div class="form-body">
+
+        <!-- Vehicle Identity -->
+        <div class="f-section"><span class="f-sec-label">Vehicle Identity</span><div class="f-sec-line"></div></div>
+
+        <div class="f-group">
+          <div class="f-label">Chassis Number <span>*</span></div>
+          <input class="f-input" type="text" placeholder="Enter chassis / VIN number" id="chassisInput">
+        </div>
+
+        <div class="f-group">
+          <div class="f-label">Registration Number <span style="color:var(--gray-400); font-size:11px;">(optional)</span></div>
+          <input class="f-input" type="text" placeholder="MH12AB1234 (optional)">
+        </div>
+
+        <!-- NSL Tags -->
+        <div class="f-section"><span class="f-sec-label">NSL Tag</span><div class="f-sec-line"></div></div>
+
+        <div class="f-group">
+          <div class="f-label">Select NSL Tag <span>*</span></div>
+          <select class="f-select" id="nslSelect" onchange="onNSLChange(this.value)">
+            <option value="">— Select NSL Tag —</option>
+            <option value="graveyard">Graveyard / Dead Vehicle</option>
+            <option value="running">RUNNING</option>
+            <option value="non_moving">NON-MOVING</option>
+            <option value="functional_non_utilised">FUNCTIONAL BUT NON-UTILISED</option>
+            <option value="out_of_custody">OUT OF CUSTOMER’S CUSTODY</option>
+            <option value="theft">THEFT</option>
+          </select>
+        </div>
+
+        <!-- GEO — shown when graveyard selected -->
+        <div id="graveyardBlock" style="display:none;">
+
+          <div class="nsl-selected-banner">
+            <span class="nsb-icon"></span>
+            <div>
+              <div class="nsb-title">Graveyard / Dead Vehicle</div>
+              <div class="nsb-sub">Geo-location auto-captured. Location fields required.</div>
+            </div>
+          </div>
+
+          <div class="geo-box">
+            <div class="geo-dot"></div>
+            <div>
+              <div class="geo-val">28.6448°N, 77.2167°E</div>
+              <div class="geo-lbl">Auto-captured · Rajiv Nagar, New Delhi</div>
+            </div>
+            <span style="margin-left:auto; font-size:16px;">✅</span>
+          </div>
+
+          <div class="f-group">
+            <div class="f-label">Address (Auto-filled)</div>
+            <input class="f-input" type="text" value="Plot 14, Rajiv Nagar Industrial Area, New Delhi - 110033" style="color:var(--gray-500); background:var(--gray-50);" readonly>
+          </div>
+
+          <!-- Yard Photos -->
+          <div class="f-section"><span class="f-sec-label">Yard Photos</span><div class="f-sec-line"></div></div>
+
+          <div class="photo-grid-2">
+            <div class="mini-photo" onclick="togglePhoto(this)">
+              <span class="mp-icon">🏭</span>
+              <span class="mp-lbl">Wide Yard Shot</span>
+            </div>
+            <div class="mini-photo" onclick="togglePhoto(this)">
+              <span class="mp-icon">📦</span>
+              <span class="mp-lbl">Stacked Vehicles</span>
+            </div>
+            <div class="mini-photo" onclick="togglePhoto(this)">
+              <span class="mp-icon">🚪</span>
+              <span class="mp-lbl">Entry Gate</span>
+            </div>
+            <div class="mini-photo" onclick="togglePhoto(this)">
+              <span class="mp-icon">📷</span>
+              <span class="mp-lbl">Additional Photo</span>
+            </div>
+          </div>
+
+          <!-- Tagged Area Photos -->
+          <div class="f-section"><span class="f-sec-label">Tagged Area Photos</span><div class="f-sec-line"></div></div>
+
+          <div class="photo-comp" style="margin-bottom:12px;" onclick="togglePhotoComp(this)">
+            <span class="pc-icon">📸</span>
+            <span class="pc-title">Vehicle Stacked Area</span>
+            <span class="pc-sub">Tap to open camera</span>
+          </div>
+
+          <!-- Customer Info -->
+          <div class="f-section"><span class="f-sec-label">Customer Details</span><div class="f-sec-line"></div></div>
+
+          <div class="f-group">
+            <div class="f-label">Customer Name <span>*</span></div>
+            <div class="autocomplete-wrap">
+              <input class="f-input" type="text" placeholder="Type to search customer..." id="custInput" oninput="onCustInput(this.value)" autocomplete="off">
+              <div class="autocomplete-list" id="custDropdown" style="display:none;"></div>
+            </div>
+          </div>
+
+          <div class="f-group">
+            <div class="f-label">POC Name <span>*</span></div>
+            <input class="f-input" type="text" placeholder="Enter point of contact name">
+          </div>
+
+          <div class="f-group">
+            <div class="f-label">Location / Address of POC</div>
+            <input class="f-input" type="text" placeholder="Enter POC location">
+          </div>
+
+          <div class="f-group">
+            <div class="f-label">POC Contact Number <span>*</span></div>
+            <input class="f-input" type="tel" placeholder="9XXXXXXXXX">
+          </div>
+
+          <!-- Employee Radio -->
+          <div class="f-section"><span class="f-sec-label">POC Classification</span><div class="f-sec-line"></div></div>
+
+          <div class="f-group">
+            <div class="f-label">Employee of Customer?</div>
+            <div class="toggle-pair">
+              <div class="tog" onclick="toggleTog(this, 'empCust')">Yes</div>
+              <div class="tog" onclick="toggleTog(this, 'empCust')">No</div>
+            </div>
+          </div>
+
+          <div class="f-group" style="margin-top:10px;">
+            <div class="f-label">Employee of Yard Owner?</div>
+            <div class="toggle-pair">
+              <div class="tog" onclick="toggleTog(this, 'empYard')">Yes</div>
+              <div class="tog" onclick="toggleTog(this, 'empYard')">No</div>
+            </div>
+          </div>
+
+          <!-- Location Type -->
+          <div class="f-section"><span class="f-sec-label">Location Type</span><div class="f-sec-line"></div></div>
+
+          <div class="f-group">
+            <div class="f-label">Client Location?</div>
+            <div class="toggle-pair">
+              <div class="tog" onclick="handleLocType(this, 'client', 'yes')">Yes</div>
+              <div class="tog" onclick="handleLocType(this, 'client', 'no')">No</div>
+            </div>
+          </div>
+
+          <!-- Third party block -->
+          <div id="thirdPartyBlock" style="display:none; margin-top:-4px;">
+            <div class="f-group">
+              <div class="f-label">Third Party Location?</div>
+              <div class="toggle-pair">
+                <div class="tog" onclick="handleLocType(this, 'thirdparty', 'yes')">Yes</div>
+                <div class="tog" onclick="handleLocType(this, 'thirdparty', 'no')">No</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Third party name block -->
+          <div id="thirdPartyNameBlock" style="display:none;">
+            <div class="f-group">
+              <div class="f-label">Third Party Owner Name <span>*</span></div>
+              <div class="autocomplete-wrap">
+                <input class="f-input" type="text" placeholder="Enter or search third party name..." id="tpInput" oninput="onTPInput(this.value)" autocomplete="off">
+                <div class="autocomplete-list" id="tpDropdown" style="display:none;"></div>
+              </div>
+            </div>
+          </div>
+
+        </div><!-- end graveyardBlock -->
+
+        <div class="pb"></div>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-navy" onclick="go('s3')">Save & Continue →</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════ -->
+  <!-- SCREEN 3: AUDIT PAGE 2 — Vehicle Details + Submit -->
+  <!-- ═══════════════════════════════════════ -->
+  <div class="screen" id="s3">
+    <div class="app-bar">
+      <button class="back-btn" onclick="goBack('s2')">←</button>
+      <span class="bar-title">Vehicle Details</span>
+      <span class="bar-right">Step 2/2</span>
+    </div>
+
+    <div class="progress-bar-wrap">
+      <div class="pb-meta"><span>Vehicle Count & Identification</span><span>2 of 2</span></div>
+      <div class="pb-track"><div class="pb-fill" style="width:100%;"></div></div>
+    </div>
+
+    <div class="scroller">
+      <div class="form-body">
+
+        <!-- Vehicle Type -->
+        <div class="f-section"><span class="f-sec-label">Vehicle Type</span><div class="f-sec-line"></div></div>
+
+        <div class="in-alert navy" style="margin-bottom:10px;">
+          <span class="ia-ico">ℹ️</span>
+          <div><div class="ia-b">Select individual type for single count, or use <strong>Mixed</strong> to select multiple types at once.</div></div>
+        </div>
+
+        <div class="radio-group" id="vehicleTypeGroup">
+          <div class="radio-row" onclick="selectVType(this, '2w')">
+            <div class="radio-circle"></div>
+            <span class="radio-label">🛵 Two-Wheeler</span>
+          </div>
+          <div class="radio-row" onclick="selectVType(this, '3w')">
+            <div class="radio-circle"></div>
+            <span class="radio-label">🛺 Three-Wheeler</span>
+          </div>
+          <div class="radio-row" onclick="selectVType(this, '4w')">
+            <div class="radio-circle"></div>
+            <span class="radio-label">🚗 Four-Wheeler</span>
+          </div>
+          <div class="radio-row" onclick="selectVType(this, 'mixed')">
+            <div class="radio-circle"></div>
+            <span class="radio-label">🔀 Mixed (select multiple)</span>
+          </div>
+        </div>
+
+        <!-- Single type count -->
+        <div id="singleCountBlock" style="display:none; margin-top:12px;">
+          <div class="f-label" style="margin-bottom:8px;">Count of Vehicles</div>
+          <div style="background:var(--white); border:1.5px solid var(--navy-border); border-radius:var(--radius); padding:12px 14px; display:flex; align-items:center; justify-content:space-between;">
+            <span style="font-size:14px; color:var(--gray-700); font-weight:500;" id="singleTypeLabel">Two-Wheeler Count</span>
+            <div class="counter">
+              <button class="cnt-btn" onclick="changeCount('single', -1)">−</button>
+              <span class="cnt-val" id="singleCount">0</span>
+              <button class="cnt-btn" onclick="changeCount('single', 1)">+</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Mixed type count -->
+        <div id="mixedCountBlock" style="display:none; margin-top:12px;">
+          <div class="f-label" style="margin-bottom:8px;">Select Types & Counts</div>
+
+          <div class="check-row2" id="mx2w" onclick="toggleMixed(this, '2w')">
+            <div class="chkbox">✓</div>
+            <span class="chk-label">🛵 Two-Wheeler</span>
+            <div class="counter" style="margin-left:auto;" onclick="event.stopPropagation()">
+              <button class="cnt-btn" onclick="changeCount('2w', -1)">−</button>
+              <span class="cnt-val" id="count2w">0</span>
+              <button class="cnt-btn" onclick="changeCount('2w', 1)">+</button>
+            </div>
+          </div>
+
+          <div class="check-row2" id="mx3w" onclick="toggleMixed(this, '3w')">
+            <div class="chkbox">✓</div>
+            <span class="chk-label">🛺 Three-Wheeler</span>
+            <div class="counter" style="margin-left:auto;" onclick="event.stopPropagation()">
+              <button class="cnt-btn" onclick="changeCount('3w', -1)">−</button>
+              <span class="cnt-val" id="count3w">0</span>
+              <button class="cnt-btn" onclick="changeCount('3w', 1)">+</button>
+            </div>
+          </div>
+
+          <div class="check-row2" id="mx4w" onclick="toggleMixed(this, '4w')">
+            <div class="chkbox">✓</div>
+            <span class="chk-label">🚗 Four-Wheeler</span>
+            <div class="counter" style="margin-left:auto;" onclick="event.stopPropagation()">
+              <button class="cnt-btn" onclick="changeCount('4w', -1)">−</button>
+              <span class="cnt-val" id="count4w">0</span>
+              <button class="cnt-btn" onclick="changeCount('4w', 1)">+</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- VIN Visibility -->
+        <div class="f-section" style="margin-top:20px;"><span class="f-sec-label">VIN / Reg. Visibility</span><div class="f-sec-line"></div></div>
+
+        <div class="f-group">
+          <div class="f-label">Vehicle Identification Numbers / Reg. Numbers Visible?</div>
+          <div class="radio-group" id="vinGroup">
+            <div class="radio-row" onclick="selectVIN(this, 'yes')">
+              <div class="radio-circle"></div>
+              <span class="radio-label">✅ Yes — Fully Visible</span>
+            </div>
+            <div class="radio-row" onclick="selectVIN(this, 'no')">
+              <div class="radio-circle"></div>
+              <span class="radio-label">❌ No — Not Visible</span>
+            </div>
+            <div class="radio-row" onclick="selectVIN(this, 'partial')">
+              <div class="radio-circle"></div>
+              <span class="radio-label">🔍 Partial — Some Visible</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- VIN input block -->
+        <div id="vinInputBlock" style="display:none; margin-top:-4px;">
+          <div class="f-group">
+            <div class="f-label" id="vinInputLabel">Enter Registration / Chassis Numbers</div>
+            <textarea class="f-input" rows="3" placeholder="e.g. MH12AB1234, MBLHA1234..." style="resize:none;"></textarea>
+          </div>
+        </div>
+
+        <!-- Yard Register Image -->
+        <div class="f-section"><span class="f-sec-label">Yard Register</span><div class="f-sec-line"></div></div>
+
+        <div class="photo-comp" style="margin-bottom:12px;" onclick="togglePhotoComp(this)">
+          <span class="pc-icon">📒</span>
+          <span class="pc-title">Yard Register Image</span>
+          <span class="pc-sub">Photograph the physical register</span>
+        </div>
+
+        <!-- 360° Video -->
+        <div class="f-section"><span class="f-sec-label">360° Video</span><div class="f-sec-line"></div></div>
+
+        <div class="video-comp" style="margin-bottom:12px;" onclick="toggleVideo(this)">
+          <span class="vc-icon">📹</span>
+          <div>
+            <div class="vc-title">Record 360° Yard Video</div>
+            <div class="vc-sub">Mandatory · Minimum 30 seconds</div>
+          </div>
+        </div>
+
+        <!-- Remarks -->
+        <div class="f-section"><span class="f-sec-label">Remarks</span><div class="f-sec-line"></div></div>
+
+        <div class="f-group">
+          <div class="f-label">Auditor Remarks (optional)</div>
+          <textarea class="f-input" rows="3" placeholder="Add any observations, notes, or findings..." style="resize:none;"></textarea>
+        </div>
+
+        <div class="pb"></div>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-green" onclick="go('s4')">✓ Submit Audit</button>
+      <button class="btn btn-outline" onclick="goBack('s2')">← Back</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════ -->
+  <!-- SCREEN 4: SUCCESS -->
+  <!-- ═══════════════════════════════════════ -->
+  <div class="screen" id="s4">
+    <div class="success-wrap">
+      <div class="suc-ring">✅</div>
+      <div class="suc-title">Audit Submitted!</div>
+      <div class="suc-id">NSL-GY-2024-0312</div>
+      <div class="suc-body">Graveyard audit for Rajiv Nagar Yard has been submitted and is under review.</div>
+
+      <div class="dispatch-box">
+        <div class="db-title">Report Dispatched To</div>
+        <div class="db-row">📋 Portfolio Risk Team</div>
+        <div class="db-row">💼 Credit Operations</div>
+        <div class="db-row">🔒 Compliance Officer</div>
+        <div class="db-row" style="color:var(--purple);"> NSL Graveyard Flag Active</div>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-navy" onclick="go('s1')">Start Another Audit →</button>
+      <button class="btn btn-outline" onclick="go('s0')">Return to Home</button>
+    </div>
+  </div>
+
+</div><!-- end shell -->
+
+<script>
+// ── Screen Navigation ──
+let current = 's0';
+
+function go(id) {
+  const cur = document.getElementById(current);
+  const next = document.getElementById(id);
+  if (!next || !cur) return;
+  cur.classList.remove('active', 'back');
+  next.classList.remove('active', 'back');
+  next.classList.add('active');
+  current = id;
+  // scroll to top
+  const sc = next.querySelector('.scroller');
+  if (sc) sc.scrollTop = 0;
+}
+
+function goBack(id) {
+  const cur = document.getElementById(current);
+  const prev = document.getElementById(id);
+  if (!prev || !cur) return;
+  cur.classList.remove('active', 'back');
+  prev.classList.remove('active', 'back');
+  prev.classList.add('active', 'back');
+  current = id;
+  const sc = prev.querySelector('.scroller');
+  if (sc) sc.scrollTop = 0;
+}
+
+// ── NSL Tag Change ──
+function onNSLChange(val) {
+  const block = document.getElementById('graveyardBlock');
+  block.style.display = val === 'graveyard' ? 'block' : 'none';
+}
+
+// ── Photo Mini: open file picker & mark done ──
+function togglePhoto(el) {
+  let input = el.querySelector('input[type="file"]');
+  if (!input) {
+    input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.multiple = true;
+    input.style.display = 'none';
+    input.addEventListener('change', function () {
+      if (this.files && this.files.length) {
+        el.classList.add('done');
+        // check mark
+        let chk = el.querySelector('.mp-check');
+        if (!chk) {
+          chk = document.createElement('div');
+          chk.className = 'mp-check';
+          chk.textContent = '✓';
+          el.appendChild(chk);
+        }
+        // image preview (first file)
+        let preview = el.querySelector('.media-preview-row');
+        if (!preview) {
+          preview = document.createElement('div');
+          preview.className = 'media-preview-row';
+          el.appendChild(preview);
+        }
+        preview.innerHTML = '';
+        Array.from(this.files).forEach(file => {
+          const img = document.createElement('img');
+          img.className = 'media-thumb';
+          img.src = URL.createObjectURL(file);
+          preview.appendChild(img);
+        });
+      } else {
+        el.classList.remove('done');
+        const chk = el.querySelector('.mp-check');
+        if (chk) chk.remove();
+        const preview = el.querySelector('.media-preview-row');
+        if (preview) preview.remove();
+      }
+    });
+    el.appendChild(input);
+  }
+  input.click();
+}
+
+// ── Photo Component: open file picker & update label ──
+function togglePhotoComp(el) {
+  let input = el.querySelector('input[type="file"]');
+  if (!input) {
+    input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.multiple = true;
+    input.style.display = 'none';
+    input.addEventListener('change', function () {
+      // preview container just below card
+      let preview = el.nextElementSibling;
+      if (!preview || !preview.classList.contains('media-preview-row')) {
+        preview = document.createElement('div');
+        preview.className = 'media-preview-row';
+        el.parentNode.insertBefore(preview, el.nextSibling);
+      }
+
+      const icon = el.querySelector('.pc-icon');
+      const title = el.querySelector('.pc-title');
+      const sub = el.querySelector('.pc-sub');
+
+      // store defaults once
+      if (!icon.dataset.defaultIcon) {
+        icon.dataset.defaultIcon = icon.textContent;
+      }
+      if (!title.dataset.defaultText) {
+        title.dataset.defaultText = title.textContent;
+      }
+      if (!sub.dataset.defaultText) {
+        sub.dataset.defaultText = sub.textContent;
+      }
+
+      if (this.files && this.files.length) {
+        // fill previews
+        preview.innerHTML = '';
+        Array.from(this.files).forEach(file => {
+          const img = document.createElement('img');
+          img.className = 'media-thumb';
+          img.src = URL.createObjectURL(file);
+          preview.appendChild(img);
+        });
+
+        el.classList.add('done');
+        icon.textContent = '✅';
+        title.textContent = 'Photo Captured';
+        sub.textContent = this.files.length === 1 ? '1 photo selected' : this.files.length + ' photos selected';
+      } else {
+        preview.innerHTML = '';
+        el.classList.remove('done');
+        icon.textContent = icon.dataset.defaultIcon;
+        title.textContent = title.dataset.defaultText;
+        sub.textContent = sub.dataset.defaultText;
+      }
+    });
+    el.appendChild(input);
+  }
+  input.click();
+}
+
+// ── Video Component: open file picker & update label ──
+function toggleVideo(el) {
+  let input = el.querySelector('input[type="file"]');
+  if (!input) {
+    input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'video/*';
+    input.multiple = true;
+    input.style.display = 'none';
+    input.addEventListener('change', function () {
+      // preview container just below card
+      let preview = el.nextElementSibling;
+      if (!preview || !preview.classList.contains('media-preview-row')) {
+        preview = document.createElement('div');
+        preview.className = 'media-preview-row';
+        el.parentNode.insertBefore(preview, el.nextSibling);
+      }
+
+      const icon = el.querySelector('.vc-icon');
+      const title = el.querySelector('.vc-title');
+      const sub = el.querySelector('.vc-sub');
+
+      // store defaults once
+      if (!icon.dataset.defaultIcon) {
+        icon.dataset.defaultIcon = icon.textContent;
+      }
+      if (!title.dataset.defaultText) {
+        title.dataset.defaultText = title.textContent;
+      }
+      if (!sub.dataset.defaultText) {
+        sub.dataset.defaultText = sub.textContent;
+      }
+
+      if (this.files && this.files.length) {
+        preview.innerHTML = '';
+        Array.from(this.files).forEach(file => {
+          const vid = document.createElement('video');
+          vid.className = 'media-video-thumb';
+          vid.src = URL.createObjectURL(file);
+          vid.controls = true;
+          preview.appendChild(vid);
+        });
+
+        el.classList.add('done');
+        icon.textContent = '✅';
+        title.textContent = 'Video Recorded';
+        sub.textContent = this.files.length === 1 ? '1 file selected' : this.files.length + ' files selected';
+      } else {
+        preview.innerHTML = '';
+        el.classList.remove('done');
+        icon.textContent = icon.dataset.defaultIcon;
+        title.textContent = title.dataset.defaultText;
+        sub.textContent = sub.dataset.defaultText;
+      }
+    });
+    el.appendChild(input);
+  }
+  input.click();
+}
+
+// ── Customer Autocomplete ──
+const customers = [
+  'Visually Right Private Limited',
+  'Vistar Mobility Pvt Ltd',
+  'Vista Green Ventures',
+  'Ola Electric Fleet Services',
+  'Mahindra Last Mile Mobility',
+  'Yulu Bikes Private Limited',
+  'Bounce Infinity',
+  'Hero Electric Vehicles'
+];
+
+function onCustInput(val) {
+  const dd = document.getElementById('custDropdown');
+  if (!val || val.length < 2) { dd.style.display = 'none'; return; }
+  const filtered = customers.filter(c => c.toLowerCase().includes(val.toLowerCase()));
+  if (!filtered.length) { dd.style.display = 'none'; return; }
+  dd.innerHTML = filtered.map(c => {
+    const idx = c.toLowerCase().indexOf(val.toLowerCase());
+    const hi = c.substring(0, idx) + '<strong>' + c.substring(idx, idx + val.length) + '</strong>' + c.substring(idx + val.length);
+    return `<div class="ac-item" onclick="selectCust('${c}')">${hi}</div>`;
+  }).join('');
+  dd.style.display = 'block';
+}
+
+function selectCust(name) {
+  document.getElementById('custInput').value = name;
+  document.getElementById('custDropdown').style.display = 'none';
+}
+
+// ── Third Party Autocomplete ──
+const thirdParties = ['Mahindra & Mahindra Ltd', 'Tata Motors Fleet', 'Maruti Suzuki India', 'SML Isuzu', 'Ashok Leyland'];
+
+function onTPInput(val) {
+  const dd = document.getElementById('tpDropdown');
+  if (!val || val.length < 2) { dd.style.display = 'none'; return; }
+  const filtered = thirdParties.filter(c => c.toLowerCase().includes(val.toLowerCase()));
+  if (!filtered.length) { dd.style.display = 'none'; return; }
+  dd.innerHTML = filtered.map(c => {
+    const idx = c.toLowerCase().indexOf(val.toLowerCase());
+    const hi = c.substring(0, idx) + '<strong>' + c.substring(idx, idx + val.length) + '</strong>' + c.substring(idx + val.length);
+    return `<div class="ac-item" onclick="selectTP('${c}')">${hi}</div>`;
+  }).join('');
+  dd.style.display = 'block';
+}
+
+function selectTP(name) {
+  document.getElementById('tpInput').value = name;
+  document.getElementById('tpDropdown').style.display = 'none';
+}
+
+// ── Toggle Tog (Yes/No pairs) ──
+const togGroups = {};
+function toggleTog(el, group) {
+  const parent = el.parentElement;
+  parent.querySelectorAll('.tog').forEach(t => {
+    t.classList.remove('yes', 'no');
+  });
+  const idx = Array.from(parent.children).indexOf(el);
+  el.classList.add(idx === 0 ? 'yes' : 'no');
+}
+
+// ── Location Type Logic ──
+function handleLocType(el, type, choice) {
+  const parent = el.parentElement;
+  parent.querySelectorAll('.tog').forEach(t => t.classList.remove('yes','no'));
+  el.classList.add(choice === 'yes' ? 'yes' : 'no');
+
+  if (type === 'client') {
+    const tp = document.getElementById('thirdPartyBlock');
+    const tpName = document.getElementById('thirdPartyNameBlock');
+    if (choice === 'no') {
+      tp.style.display = 'block';
+    } else {
+      tp.style.display = 'none';
+      tpName.style.display = 'none';
+    }
+  }
+  if (type === 'thirdparty') {
+    const tpName = document.getElementById('thirdPartyNameBlock');
+    tpName.style.display = choice === 'yes' ? 'block' : 'none';
+  }
+}
+
+// ── Vehicle Type Select ──
+let currentVType = null;
+function selectVType(el, type) {
+  document.querySelectorAll('#vehicleTypeGroup .radio-row').forEach(r => r.classList.remove('sel'));
+  el.classList.add('sel');
+  currentVType = type;
+
+  const single = document.getElementById('singleCountBlock');
+  const mixed = document.getElementById('mixedCountBlock');
+
+  if (type === 'mixed') {
+    single.style.display = 'none';
+    mixed.style.display = 'block';
+  } else {
+    mixed.style.display = 'none';
+    single.style.display = 'block';
+    const labels = { '2w': 'Two-Wheeler Count', '3w': 'Three-Wheeler Count', '4w': 'Four-Wheeler Count' };
+    document.getElementById('singleTypeLabel').textContent = labels[type];
+  }
+}
+
+// ── Counters ──
+const counts = { single: 0, '2w': 0, '3w': 0, '4w': 0 };
+function changeCount(key, delta) {
+  counts[key] = Math.max(0, counts[key] + delta);
+  const el = document.getElementById(key === 'single' ? 'singleCount' : 'count' + key);
+  if (el) el.textContent = counts[key];
+}
+
+// ── Mixed Checkbox Toggle ──
+function toggleMixed(el, key) {
+  el.classList.toggle('sel');
+}
+
+// ── VIN Visibility ──
+let currentVIN = null;
+function selectVIN(el, type) {
+  document.querySelectorAll('#vinGroup .radio-row').forEach(r => r.classList.remove('sel'));
+  el.classList.add('sel');
+  currentVIN = type;
+  const block = document.getElementById('vinInputBlock');
+  const label = document.getElementById('vinInputLabel');
+  if (type === 'yes') {
+    block.style.display = 'block';
+    label.textContent = 'Enter Registration / Chassis Numbers (visible ones)';
+  } else if (type === 'partial') {
+    block.style.display = 'block';
+    label.textContent = 'Enter Partially Visible Numbers';
+  } else {
+    block.style.display = 'none';
+  }
+}
+
+// Close dropdowns on outside click
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('.autocomplete-wrap')) {
+    document.querySelectorAll('.autocomplete-list').forEach(d => d.style.display = 'none');
+  }
+});
+</script>
+</body>
+</html>
