@@ -1,0 +1,1794 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Carrum Driver Onboarding</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=DM+Serif+Display&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --primary: #4F46E5; --primary-light: #EEF2FF; --primary-dark: #3730A3;
+    --accent: #10B981; --accent-light: #ECFDF5;
+    --warn: #F59E0B; --danger: #EF4444;
+    --text: #111827; --text-secondary: #6B7280; --text-muted: #9CA3AF;
+    --border: #E5E7EB; --bg: #F9FAFB; --white: #ffffff;
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.08); --shadow: 0 4px 16px rgba(0,0,0,0.10); --shadow-lg: 0 8px 32px rgba(0,0,0,0.14);
+    --radius: 14px; --radius-sm: 8px; --radius-lg: 20px;
+  }
+  body { font-family: 'DM Sans', sans-serif; background: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #4338ca 100%); min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px 16px; }
+  .app-wrapper { display: flex; flex-direction: column; align-items: center; gap: 16px; }
+  .phone { width: 390px; height: 780px; background: var(--white); border-radius: 44px; box-shadow: 0 32px 80px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.1) inset; overflow: hidden; position: relative; display: flex; flex-direction: column; }
+  .status-bar { height: 44px; background: var(--white); display: flex; align-items: center; justify-content: space-between; padding: 0 24px; font-size: 12px; font-weight: 600; color: var(--text); flex-shrink: 0; z-index: 10; }
+  .status-bar .time { font-size: 14px; font-weight: 700; }
+  .screen { position: absolute; top: 64px; left: 0; right: 0; bottom: 0; display: none; overflow-y: auto; overflow-x: hidden; background: var(--white); scrollbar-width: none; }
+  .screen::-webkit-scrollbar { display: none; }
+  .screen.active { display: block; }
+  @keyframes fadeSlideIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
+  .screen.active { animation: fadeSlideIn 0.2s ease; }
+
+  /* ===== HELP BUTTON ===== */
+  .help-btn {
+    position: absolute; top: 52px; right: 14px; z-index: 200;
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    color: white; border: none; border-radius: 20px;
+    padding: 5px 12px 5px 8px; display: none; align-items: center; gap: 5px;
+    font-size: 12px; font-weight: 700; cursor: pointer;
+    box-shadow: 0 2px 8px rgba(239,68,68,0.4);
+    font-family: 'DM Sans', sans-serif;
+    transition: all 0.15s;
+  }
+  .help-btn:hover { transform: scale(1.05); }
+  .help-btn .help-phone-icon { font-size: 14px; }
+  .help-btn.visible { display: flex; }
+
+  /* ===== HELP MODAL ===== */
+  .help-modal {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.6); z-index: 500; display: none;
+    align-items: flex-end; backdrop-filter: blur(4px);
+  }
+  .help-modal.show { display: flex; animation: fadeSlideIn 0.2s ease; }
+  .help-sheet {
+    width: 100%; background: white;
+    border-radius: 24px 24px 0 0;
+    padding: 0 0 24px 0;
+    box-shadow: 0 -8px 32px rgba(0,0,0,0.2);
+  }
+  .help-sheet-handle { width: 40px; height: 4px; background: var(--border); border-radius: 2px; margin: 12px auto 0; }
+  .help-sheet-title { padding: 16px 20px 8px; font-size: 18px; font-weight: 700; color: var(--text); }
+  .help-sheet-sub { padding: 0 20px 16px; font-size: 13px; color: var(--text-secondary); border-bottom: 1px solid var(--border); }
+  .help-option {
+    display: flex; align-items: center; gap: 14px;
+    padding: 16px 20px; cursor: pointer; transition: background 0.15s;
+  }
+  .help-option:hover { background: var(--bg); }
+  .help-option-icon { width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
+  .help-option-title { font-size: 15px; font-weight: 600; color: var(--text); }
+  .help-option-desc { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+  .help-option-arrow { margin-left: auto; color: var(--text-muted); font-size: 18px; }
+  .help-cancel { margin: 8px 20px 0; width: calc(100% - 40px); padding: 14px; background: var(--bg); border: none; border-radius: var(--radius-sm); font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 600; color: var(--text-secondary); cursor: pointer; }
+
+  /* ===== AUTO VIDEO PLAYER CARD ===== */
+  .avideo-card {
+    width: 100%; border-radius: 0; position: relative; overflow: hidden;
+    flex-shrink: 0; cursor: pointer; user-select: none;
+    background: #1e1b4b;
+  }
+  .avideo-inner {
+    width: 100%; height: 195px; position: relative; overflow: hidden;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .avideo-bg-gradient {
+    position: absolute; inset: 0;
+    background: var(--vc-from, #1e1b4b);
+    background: linear-gradient(135deg, var(--vc-from, #1e1b4b) 0%, var(--vc-to, #4338ca) 100%);
+  }
+  /* Animated shimmer/wave overlay */
+  .avideo-wave {
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse at 30% 50%, rgba(255,255,255,0.08) 0%, transparent 60%),
+                radial-gradient(ellipse at 70% 30%, rgba(255,255,255,0.05) 0%, transparent 50%);
+    animation: wave-pulse 3s ease-in-out infinite;
+  }
+  @keyframes wave-pulse { 0%,100%{opacity:1;} 50%{opacity:0.6;} }
+  /* Floating particles */
+  .avideo-particle {
+    position: absolute; width: 8px; height: 8px; border-radius: 50%;
+    background: rgba(255,255,255,0.2); animation: particle-float 4s ease-in-out infinite;
+  }
+  .avideo-particle:nth-child(1) { left:15%; top:20%; animation-delay:0s; }
+  .avideo-particle:nth-child(2) { left:75%; top:15%; animation-delay:1s; width:5px; height:5px; }
+  .avideo-particle:nth-child(3) { left:85%; top:65%; animation-delay:2s; width:6px; height:6px; }
+  .avideo-particle:nth-child(4) { left:40%; top:75%; animation-delay:0.5s; width:4px; height:4px; }
+  @keyframes particle-float { 0%,100%{transform:translateY(0) scale(1);opacity:0.6;} 50%{transform:translateY(-14px) scale(1.2);opacity:1;} }
+  /* Presenter area */
+  .avideo-presenter {
+    position: relative; z-index: 5;
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+    margin-bottom: 32px;
+  }
+  .avideo-avatar {
+    font-size: 62px; line-height: 1;
+    animation: presenter-anim 2s ease-in-out infinite;
+    filter: drop-shadow(0 4px 12px rgba(0,0,0,0.4));
+  }
+  @keyframes presenter-anim { 0%,100%{transform:translateY(0) rotate(-2deg);} 50%{transform:translateY(-10px) rotate(2deg);} }
+  /* Title overlay */
+  .avideo-title {
+    position: absolute; bottom: 44px; left: 14px; right: 70px; z-index: 10;
+    font-family: 'DM Sans', sans-serif; font-size: 16px; font-weight: 800;
+    color: #FFD700; text-shadow: 0 2px 10px rgba(0,0,0,0.6);
+    line-height: 1.2;
+  }
+  /* Top-right controls */
+  .avideo-top-controls {
+    position: absolute; top: 10px; right: 10px; z-index: 20;
+    display: flex; flex-direction: column; gap: 6px; align-items: flex-end;
+  }
+  .avideo-lang-btn {
+    width: 30px; height: 30px; border-radius: 50%;
+    background: rgba(255,255,255,0.2); backdrop-filter: blur(4px);
+    border: 1.5px solid rgba(255,255,255,0.4);
+    color: white; font-size: 11px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center; cursor: pointer;
+  }
+  .avideo-mute-btn {
+    width: 30px; height: 30px; border-radius: 50%;
+    background: rgba(0,0,0,0.4); backdrop-filter: blur(4px);
+    border: 1.5px solid rgba(255,255,255,0.2);
+    color: white; font-size: 14px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; border-width: 0;
+  }
+  /* Bottom progress bar */
+  .avideo-bottom {
+    position: absolute; bottom: 0; left: 0; right: 0; z-index: 15;
+    background: rgba(0,0,0,0.5); backdrop-filter: blur(2px);
+    padding: 6px 10px 8px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .avideo-play-pause {
+    background: none; border: none; color: white;
+    font-size: 14px; cursor: pointer; padding: 0; flex-shrink: 0;
+  }
+  .avideo-prog-bar {
+    flex: 1; height: 3px; background: rgba(255,255,255,0.25); border-radius: 2px;
+    cursor: pointer; position: relative;
+  }
+  .avideo-prog-fill {
+    height: 100%; border-radius: 2px;
+    background: linear-gradient(90deg, #fff 0%, rgba(255,255,255,0.7) 100%);
+    width: 0%; transition: width 0.4s linear;
+    position: relative;
+  }
+  .avideo-prog-fill::after {
+    content: ''; position: absolute; right: -4px; top: 50%; transform: translateY(-50%);
+    width: 8px; height: 8px; border-radius: 50%; background: white;
+  }
+  .avideo-time { font-size: 10px; color: rgba(255,255,255,0.7); min-width: 50px; text-align: right; flex-shrink: 0; }
+  /* Play overlay */
+  .avideo-play-overlay {
+    position: absolute; inset: 0; z-index: 12;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(0,0,0,0.2);
+    transition: opacity 0.3s;
+    opacity: 0; pointer-events: none;
+  }
+  .avideo-play-overlay.visible { opacity: 1; pointer-events: auto; }
+  .avideo-play-overlay.hidden { opacity: 0; pointer-events: none; }
+  .avideo-big-play {
+    width: 52px; height: 52px; border-radius: 50%;
+    background: rgba(255,255,255,0.9); color: #1e1b4b;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    transition: transform 0.15s;
+  }
+  .avideo-big-play:hover { transform: scale(1.1); }
+
+  /* BUTTONS */
+  .btn { width: 100%; padding: 16px; border: none; border-radius: var(--radius); font-family: 'DM Sans', sans-serif; font-size: 16px; font-weight: 600; cursor: pointer; transition: all 0.15s; letter-spacing: 0.01em; }
+  .btn:active { transform: scale(0.98); }
+  .btn-primary { background: var(--primary); color: white; }
+  .btn-primary:hover { background: var(--primary-dark); }
+  .btn-outline { background: transparent; color: var(--primary); border: 1.5px solid var(--primary); }
+  .btn-sm { padding: 10px 16px; font-size: 14px; }
+
+  /* LAYOUT */
+  .screen-content { padding: 20px; display: flex; flex-direction: column; gap: 16px; }
+  .back-header { display: flex; align-items: center; gap: 8px; padding: 12px 20px; }
+  .back-btn { width: 36px; height: 36px; border-radius: 50%; background: var(--bg); display: flex; align-items: center; justify-content: center; cursor: pointer; border: none; font-size: 16px; }
+  .section-title { font-size: 18px; font-weight: 700; color: var(--text); }
+  .section-sub { font-size: 13px; color: var(--text-secondary); margin-top: 2px; }
+  .lang-chip { padding: 6px 12px; border-radius: 20px; font-size: 12px; border: 1px solid var(--border); cursor: pointer; background: white; }
+  .lang-chip.active { background: var(--primary-light); color: var(--primary); border-color: var(--primary); font-weight: 600; }
+
+  /* SCREEN 1 */
+  .hero-title { font-family: 'DM Serif Display', serif; font-size: 32px; line-height: 1.2; color: var(--text); }
+  .hero-title span { color: var(--primary); }
+  .hero-sub { font-size: 14px; color: var(--text-secondary); line-height: 1.5; }
+  .stats-row { display: flex; gap: 0; border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; }
+  .stat-item { flex: 1; padding: 12px 8px; text-align: center; border-right: 1px solid var(--border); }
+  .stat-item:last-child { border-right: none; }
+  .stat-num { font-size: 16px; font-weight: 700; color: var(--text); }
+  .stat-label { font-size: 10px; color: var(--text-muted); margin-top: 2px; }
+  .testimonial { display: flex; align-items: center; gap: 8px; padding: 12px; background: var(--bg); border-radius: var(--radius-sm); }
+  .avatar { width: 28px; height: 28px; border-radius: 50%; border: 2px solid white; display: flex; align-items: center; justify-content: center; font-size: 10px; margin-left: -8px; }
+  .avatar:first-child { margin-left: 0; }
+  .avatar-stack { display: flex; }
+  .testimonial-text { font-size: 12px; color: var(--text-secondary); flex: 1; }
+  .trust-badge { text-align: center; font-size: 12px; color: var(--text-muted); display: flex; align-items: center; justify-content: center; gap: 4px; }
+
+  /* SCREEN 2 */
+  .phone-input-row { display: flex; gap: 8px; }
+  .country-code { padding: 14px 12px; border: 1.5px solid var(--border); border-radius: var(--radius-sm); font-size: 16px; font-weight: 600; background: var(--bg); color: var(--text); }
+  .phone-input { flex: 1; padding: 14px 16px; border: 1.5px solid var(--primary); border-radius: var(--radius-sm); font-size: 16px; font-family: 'DM Sans', sans-serif; outline: none; color: var(--text); }
+  .secure-note { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-muted); justify-content: center; }
+  .login-link { text-align: center; font-size: 14px; color: var(--text-secondary); }
+
+  /* STEP CARDS */
+  .step-card { display: flex; align-items: flex-start; gap: 14px; padding: 16px; background: var(--bg); border-radius: var(--radius-sm); }
+  .step-num { width: 32px; height: 32px; border-radius: 50%; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; flex-shrink: 0; }
+  .step-title { font-size: 15px; font-weight: 600; color: var(--text); }
+  .step-desc { font-size: 13px; color: var(--text-secondary); margin-top: 2px; }
+  .earning-banner { background: linear-gradient(135deg, var(--primary-light), #ddd6fe); padding: 16px; border-radius: var(--radius-sm); text-align: center; }
+  .earning-banner .big { font-size: 22px; font-weight: 700; color: var(--primary); }
+  .earning-banner .sub { font-size: 12px; color: var(--text-secondary); }
+  .icons-row { display: flex; justify-content: space-around; padding: 8px 0; }
+  .icon-item { text-align: center; }
+  .icon-item .icon { font-size: 28px; }
+  .icon-item .label { font-size: 11px; color: var(--text-secondary); margin-top: 4px; }
+
+  /* OPTION CARDS */
+  .option-card { display: flex; align-items: center; gap: 12px; padding: 16px; border: 1.5px solid var(--border); border-radius: var(--radius-sm); cursor: pointer; transition: all 0.15s; }
+  .option-card:hover, .option-card.selected { border-color: var(--primary); background: var(--primary-light); }
+  .option-radio { width: 20px; height: 20px; border-radius: 50%; border: 2px solid var(--border); flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+  .option-card.selected .option-radio { border-color: var(--primary); background: var(--primary); }
+  .option-card.selected .option-radio::after { content: ''; width: 8px; height: 8px; border-radius: 50%; background: white; display: block; }
+  .option-title { font-size: 15px; font-weight: 600; color: var(--text); }
+  .option-desc { font-size: 12px; color: var(--text-secondary); }
+  .exp-row { display: flex; gap: 8px; margin-top: 4px; flex-wrap: wrap; }
+  .exp-chip { padding: 8px 14px; border-radius: 20px; border: 1.5px solid var(--border); font-size: 13px; cursor: pointer; transition: all 0.15s; }
+  .exp-chip.selected { background: var(--primary); color: white; border-color: var(--primary); }
+
+  /* PLAN CARD */
+  .recommended-badge { background: var(--accent); color: white; font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 4px; display: inline-block; }
+  .plan-card { border: 2px solid var(--primary); border-radius: var(--radius); padding: 16px; }
+  .plan-name { font-size: 24px; font-weight: 700; color: var(--primary); }
+  .plan-tagline { font-size: 14px; color: var(--text-secondary); margin-top: 4px; }
+  .plan-features { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+  .plan-feature { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text); }
+  .plan-feature::before { content: '✓'; color: var(--accent); font-weight: 700; }
+  .earning-range { text-align: center; padding: 12px; background: var(--accent-light); border-radius: var(--radius-sm); }
+  .earning-range .range { font-size: 22px; font-weight: 700; color: var(--accent); }
+  .earning-range .label { font-size: 12px; color: var(--text-secondary); }
+  .compare-link { text-align: center; color: var(--primary); font-size: 14px; font-weight: 600; cursor: pointer; }
+
+  /* ELIGIBILITY */
+  .progress-bar-wrap { padding: 0 20px; }
+  .progress-steps { display: flex; gap: 4px; margin-bottom: 4px; }
+  .progress-step { flex: 1; height: 4px; border-radius: 2px; background: var(--border); transition: background 0.3s; }
+  .progress-step.done { background: var(--primary); }
+  .city-select, .hub-select { width: 100%; padding: 14px 16px; border: 1.5px solid var(--border); border-radius: var(--radius-sm); font-family: 'DM Sans', sans-serif; font-size: 16px; color: var(--text); appearance: none; background: var(--bg) url("data:image/svg+xml,%3Csvg width='12' height='8' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236B7280' stroke-width='2' fill='none'/%3E%3C/svg%3E") no-repeat right 16px center; cursor: pointer; }
+  .city-illustration { text-align: center; padding: 20px; font-size: 60px; }
+
+  /* RESULT */
+  .result-center { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 24px 20px; text-align: center; }
+  .big-check { width: 80px; height: 80px; border-radius: 50%; background: var(--accent-light); display: flex; align-items: center; justify-content: center; font-size: 36px; border: 3px solid var(--accent); }
+  @keyframes pulse { 0%,100%{transform:scale(1);} 50%{transform:scale(1.05);} }
+  .big-check { animation: pulse 2s infinite; }
+  .result-title { font-family: 'DM Serif Display', serif; font-size: 28px; color: var(--text); }
+  .result-sub { font-size: 14px; color: var(--text-secondary); }
+  .confetti { font-size: 24px; letter-spacing: 4px; }
+  .next-steps { padding: 0 20px; display: flex; flex-direction: column; gap: 10px; }
+  .next-step-item { display: flex; align-items: center; gap: 12px; padding: 12px; background: var(--bg); border-radius: var(--radius-sm); }
+  .step-circle { width: 28px; height: 28px; border-radius: 50%; background: var(--primary-light); color: var(--primary); font-size: 13px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .whatsapp-btn { display: flex; align-items: center; justify-content: center; gap: 8px; color: #25D366; font-weight: 600; cursor: pointer; font-size: 14px; }
+
+  /* CALCULATOR */
+  .calc-section { padding: 16px 20px; }
+  .slider-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .slider-label { font-size: 14px; color: var(--text); }
+  .slider-val { font-size: 16px; font-weight: 700; color: var(--primary); }
+  input[type=range] { width: 100%; accent-color: var(--primary); height: 4px; }
+  .slider-range { display: flex; justify-content: space-between; font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+  .earnings-card { margin: 0 20px; background: linear-gradient(135deg, #EEF2FF, #ddd6fe); border-radius: var(--radius); padding: 20px; }
+  .earnings-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid rgba(79,70,229,0.1); }
+  .earnings-row:last-child { border-bottom: none; }
+  .earnings-label { font-size: 14px; color: var(--text-secondary); }
+  .earnings-amount { font-size: 22px; font-weight: 700; color: var(--primary); }
+  .disclaimer { font-size: 11px; color: var(--text-muted); padding: 0 20px; text-align: center; }
+
+  /* STORIES */
+  .story-card { margin: 0 20px; border-radius: var(--radius); overflow: hidden; border: 1px solid var(--border); cursor: pointer; }
+  .story-thumb { height: 130px; background: linear-gradient(135deg, #1e1b4b, #4338ca); display: flex; align-items: center; justify-content: center; position: relative; }
+  .story-play { width: 44px; height: 44px; background: rgba(255,255,255,0.9); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+  .story-info { padding: 10px 14px; }
+  .story-name { font-size: 15px; font-weight: 600; }
+  .story-earning { font-size: 13px; color: var(--accent); font-weight: 600; }
+  .counter-row { display: flex; justify-content: space-around; padding: 16px 20px; background: var(--bg); margin: 0 20px; border-radius: var(--radius-sm); }
+  .counter-item { text-align: center; }
+  .counter-num { font-size: 20px; font-weight: 700; color: var(--text); }
+  .counter-label { font-size: 11px; color: var(--text-muted); }
+
+  /* HUB */
+  .hub-hero { height: 150px; background: linear-gradient(135deg, #1e1b4b, #3730a3); display: flex; align-items: center; justify-content: center; }
+  .hub-hero-text { color: white; text-align: center; }
+  .hub-hero-text h2 { font-family: 'DM Serif Display', serif; font-size: 22px; }
+  .hub-feature { display: flex; align-items: center; gap: 12px; padding: 12px; background: var(--bg); border-radius: var(--radius-sm); }
+  .hub-icon { font-size: 24px; }
+  .hub-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 0 20px; }
+  .hub-thumb { height: 80px; background: linear-gradient(135deg, #e0e7ff, #c7d2fe); border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; font-size: 32px; }
+
+  /* REFUND */
+  .amount-banner { text-align: center; padding: 20px; background: linear-gradient(135deg, var(--primary-light), #ddd6fe); border-radius: var(--radius); }
+  .amount-banner .amount { font-size: 36px; font-weight: 700; color: var(--primary); }
+  .refund-item { display: flex; align-items: flex-start; gap: 12px; padding: 14px; background: var(--bg); border-radius: var(--radius-sm); }
+  .refund-icon { font-size: 22px; flex-shrink: 0; }
+  .refund-title { font-size: 14px; font-weight: 600; color: var(--text); }
+
+  /* FAQ */
+  .faq-item { border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; }
+  .faq-q { display: flex; justify-content: space-between; align-items: center; padding: 14px 16px; cursor: pointer; font-size: 14px; font-weight: 500; color: var(--text); }
+  .faq-q span { font-size: 18px; color: var(--text-muted); transition: transform 0.2s; }
+  .faq-a { padding: 0 16px 14px; font-size: 13px; color: var(--text-secondary); line-height: 1.5; display: none; }
+  .faq-item.open .faq-a { display: block; }
+  .faq-item.open .faq-q span { transform: rotate(180deg); }
+
+  /* PAYMENT */
+  .payment-amount { text-align: center; padding: 20px 20px 12px; }
+  .payment-amount .amount { font-size: 48px; font-weight: 700; color: var(--text); }
+  .payment-amount .refund-note { font-size: 13px; color: var(--accent); font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 4px; }
+  .payment-methods { display: flex; gap: 6px; flex-wrap: wrap; }
+  .payment-method { padding: 6px 10px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 12px; font-weight: 600; color: var(--text); background: var(--bg); }
+  .upi-input { width: 100%; padding: 14px 16px; border: 1.5px solid var(--border); border-radius: var(--radius-sm); font-family: 'DM Sans', sans-serif; font-size: 15px; outline: none; }
+  .upi-input:focus { border-color: var(--primary); }
+  .secure-row { display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 12px; color: var(--text-muted); text-align: center; }
+
+  /* SUCCESS */
+  .success-center { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 20px 20px 12px; text-align: center; }
+  .success-icon { width: 72px; height: 72px; border-radius: 50%; background: var(--accent-light); border: 3px solid var(--accent); display: flex; align-items: center; justify-content: center; font-size: 32px; }
+  .success-title { font-family: 'DM Serif Display', serif; font-size: 24px; color: var(--text); }
+  .success-amount { font-size: 18px; font-weight: 700; color: var(--accent); }
+  .receipt-card { margin: 0 20px; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+  .receipt-row { display: flex; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid var(--border); font-size: 13px; }
+  .receipt-row:last-child { border-bottom: none; }
+  .receipt-label { color: var(--text-secondary); }
+  .receipt-val { font-weight: 600; color: var(--text); }
+
+  /* BOOKING */
+  .date-row { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; }
+  .date-chip { min-width: 52px; padding: 10px 8px; border-radius: var(--radius-sm); border: 1.5px solid var(--border); text-align: center; cursor: pointer; flex-shrink: 0; transition: all 0.15s; }
+  .date-chip.selected { background: var(--primary); color: white; border-color: var(--primary); }
+  .date-chip .day-name { font-size: 10px; color: inherit; opacity: 0.7; }
+  .date-chip .day-num { font-size: 16px; font-weight: 700; }
+  .time-row { display: flex; gap: 8px; flex-wrap: wrap; }
+  .time-chip { padding: 10px 14px; border-radius: var(--radius-sm); border: 1.5px solid var(--border); font-size: 13px; cursor: pointer; transition: all 0.15s; }
+  .time-chip.selected { background: var(--primary); color: white; border-color: var(--primary); }
+
+  /* DOCUMENTS */
+  .doc-item { display: flex; align-items: center; gap: 12px; padding: 14px; background: var(--bg); border-radius: var(--radius-sm); cursor: pointer; transition: all 0.15s; }
+  .doc-item.checked { background: var(--accent-light); }
+  .doc-icon { font-size: 28px; flex-shrink: 0; }
+  .doc-name { font-size: 15px; font-weight: 500; color: var(--text); }
+  .doc-check { margin-left: auto; width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--border); display: flex; align-items: center; justify-content: center; color: transparent; font-weight: 700; font-size: 11px; transition: all 0.15s; }
+  .doc-item.checked .doc-check { background: var(--accent); color: white; border-color: var(--accent); }
+
+  /* REMINDER */
+  .reminder-hero { text-align: center; padding: 16px 20px 8px; }
+  .reminder-emoji { font-size: 52px; }
+  .reminder-title { font-family: 'DM Serif Display', serif; font-size: 26px; color: var(--text); margin-top: 6px; }
+  .reminder-detail { background: var(--primary-light); border-radius: var(--radius); padding: 16px 20px; margin: 0 20px; text-align: center; }
+  .reminder-detail .hub { font-size: 16px; font-weight: 700; color: var(--primary); margin-top: 4px; }
+  .channel-item { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--text-secondary); }
+  .channel-icon { font-size: 18px; }
+
+  /* MESSAGES */
+  .message-bubble { padding: 12px 14px; background: var(--bg); border-radius: var(--radius-sm); border-left: 3px solid var(--primary); }
+  .msg-sender { font-size: 12px; font-weight: 600; color: var(--primary); margin-bottom: 4px; display: flex; align-items: center; gap: 6px; }
+  .msg-avatar { width: 24px; height: 24px; border-radius: 50%; background: var(--primary); color: white; font-size: 11px; display: flex; align-items: center; justify-content: center; font-weight: 700; }
+  .msg-text { font-size: 13px; color: var(--text); line-height: 1.5; }
+  .msg-time { font-size: 11px; color: var(--text-muted); margin-top: 6px; }
+
+  /* EXPERT */
+  .expert-hero { text-align: center; padding: 16px; background: linear-gradient(135deg, #EEF2FF, #ddd6fe); margin: 0 20px; border-radius: var(--radius); }
+  .expert-avatar { font-size: 60px; }
+  .expert-title { font-size: 16px; font-weight: 700; color: var(--text); margin-top: 6px; }
+  .contact-option { display: flex; align-items: center; gap: 14px; padding: 16px; border: 1.5px solid var(--border); border-radius: var(--radius); cursor: pointer; transition: all 0.15s; }
+  .contact-option:hover { border-color: var(--primary); background: var(--primary-light); }
+  .contact-icon { font-size: 26px; }
+  .contact-label { font-size: 15px; font-weight: 600; color: var(--text); }
+  .contact-desc { font-size: 12px; color: var(--text-secondary); }
+  .contact-arrow { margin-left: auto; color: var(--text-muted); font-size: 18px; }
+
+  /* BOTTOM NAV */
+  .bottom-nav { display: flex; justify-content: space-around; padding: 8px 0; border-top: 1px solid var(--border); background: white; flex-shrink: 0; }
+  .bnav-item { display: flex; flex-direction: column; align-items: center; gap: 2px; cursor: pointer; padding: 4px 12px; border-radius: var(--radius-sm); }
+  .bnav-icon { font-size: 20px; }
+  .bnav-label { font-size: 10px; color: var(--text-muted); }
+  .bnav-item.active .bnav-label { color: var(--primary); }
+
+  /* TOAST */
+  .toast { position: absolute; top: 60px; left: 50%; transform: translateX(-50%) translateY(-20px); background: rgba(17,24,39,0.95); color: white; padding: 10px 16px; border-radius: 20px; font-size: 13px; font-weight: 500; z-index: 1000; opacity: 0; transition: all 0.3s cubic-bezier(0.175,0.885,0.32,1.275); pointer-events: none; box-shadow: var(--shadow-lg); display: flex; align-items: center; gap: 8px; }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* PHONE NOTCH */
+  .phone-notch { position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 150px; height: 25px; background: black; border-bottom-left-radius: 18px; border-bottom-right-radius: 18px; z-index: 300; display: flex; align-items: center; justify-content: center; }
+  .phone-camera { width: 12px; height: 12px; border-radius: 50%; background: #111; margin-right: 40px; }
+  .phone-speaker { width: 40px; height: 4px; border-radius: 2px; background: #222; }
+
+  /* NAV ARROW */
+  .nav-arrow { width: 40px; height: 40px; border-radius: 50%; background: white; border: none; cursor: pointer; font-size: 18px; display: flex; align-items: center; justify-content: center; box-shadow: var(--shadow); transition: all 0.15s; color: var(--primary); }
+  .nav-arrow:hover { background: var(--primary); color: white; }
+  .screen-counter { background: rgba(255,255,255,0.9); padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; color: var(--text); display: flex; align-items: center; }
+  .page-dot { width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,0.3); transition: all 0.2s; cursor: pointer; }
+  .page-dot.active { background: white; width: 24px; border-radius: 4px; }
+
+  /* DEPOSIT / MISC */
+  .deposit-hero { text-align: center; padding: 20px 20px 12px; }
+  .deposit-illustration { height: 120px; background: linear-gradient(135deg, #EEF2FF, #ddd6fe); border-radius: var(--radius); margin: 0 20px; display: flex; align-items: center; justify-content: center; font-size: 56px; }
+  .benefit-item { display: flex; align-items: center; gap: 10px; padding: 10px; font-size: 13px; color: var(--text); }
+  .benefit-item::before { content: '✓'; color: var(--accent); font-weight: 700; font-size: 16px; }
+  /* DOCUMENT UPLOAD */
+  .doc-upload-card { border: 1.5px dashed var(--border); border-radius: var(--radius); padding: 20px; text-align: center; cursor: pointer; transition: all 0.2s; position: relative; overflow: hidden; background: var(--white); }
+  .doc-upload-card:hover { border-color: var(--primary); background: var(--primary-light); }
+  .doc-upload-icon { font-size: 32px; margin-bottom: 8px; }
+  .doc-upload-title { font-size: 15px; font-weight: 600; color: var(--text); }
+  .doc-upload-sub { font-size: 12px; color: var(--text-secondary); margin-top: 4px; }
+  .doc-upload-card.uploaded { border: 1.5px solid var(--accent); background: var(--accent-light); }
+  .doc-upload-card.uploaded .doc-upload-icon { color: var(--accent); }
+  .doc-check { position: absolute; top: 12px; right: 12px; width: 24px; height: 24px; background: var(--accent); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; opacity: 0; transform: scale(0.5); transition: all 0.3s; }
+  .doc-upload-card.uploaded .doc-check { opacity: 1; transform: scale(1); }
+</style>
+</head>
+<body>
+<div class="app-wrapper">
+  <div class="phone">
+
+    <!-- PHONE NOTCH -->
+    <div class="phone-notch"><div class="phone-camera"></div><div class="phone-speaker"></div></div>
+
+    <!-- TOAST -->
+    <div class="toast" id="appToast"><span class="toast-icon">ℹ️</span><span class="toast-msg"></span></div>
+
+    <!-- HELP BUTTON (screens 3+) -->
+    <button class="help-btn" id="helpBtn" onclick="openHelpModal()">
+      <span class="help-phone-icon">📞</span>Help
+    </button>
+
+    <!-- HELP MODAL -->
+    <div class="help-modal" id="helpModal" onclick="closeHelpModal(event)">
+      <div class="help-sheet">
+        <div class="help-sheet-handle"></div>
+        <div class="help-sheet-title">🎧 Need Help?</div>
+        <div class="help-sheet-sub">Our onboarding experts are here for you — available 9 AM to 9 PM</div>
+        <div class="help-option" onclick="helpCallNow()">
+          <div class="help-option-icon" style="background:#FEE2E2;">📞</div>
+          <div>
+            <div class="help-option-title">Call Now</div>
+            <div class="help-option-desc">+91 9555 123 456 · Instant connect</div>
+          </div>
+          <span class="help-option-arrow">›</span>
+        </div>
+        <div class="help-option" onclick="helpRequestCallback()">
+          <div class="help-option-icon" style="background:#EEF2FF;">📲</div>
+          <div>
+            <div class="help-option-title">Request Callback</div>
+            <div class="help-option-desc">We'll call you back in 2 minutes</div>
+          </div>
+          <span class="help-option-arrow">›</span>
+        </div>
+        <div class="help-option" onclick="helpWhatsApp()">
+          <div class="help-option-icon" style="background:#DCFCE7;">💬</div>
+          <div>
+            <div class="help-option-title">WhatsApp Chat</div>
+            <div class="help-option-desc">Get instant text support</div>
+          </div>
+          <span class="help-option-arrow">›</span>
+        </div>
+        <button class="help-cancel" onclick="closeHelpModal()">Cancel</button>
+      </div>
+    </div>
+
+    <!-- STATUS BAR -->
+    <div class="status-bar" style="margin-top:20px;">
+      <span class="time">12:30</span>
+      <div style="display:flex;gap:4px;align-items:center;font-size:11px;">
+        <span>▲▼</span><span>WiFi</span><span>🔋</span>
+      </div>
+    </div>
+
+    <!-- ===== SCREEN 1: Welcome ===== -->
+    <div class="screen active" id="screen-1">
+      <div style="padding:6px 20px 4px; display:flex; justify-content:flex-end; gap:8px;">
+        <span onclick="setLanguage('en')" style="font-size:12px; color:var(--primary); font-weight:600; cursor:pointer;">English</span>
+        <span style="font-size:12px; color:var(--text-muted)">|</span>
+        <span onclick="setLanguage('hi')" style="font-size:12px; color:var(--primary); font-weight:600; cursor:pointer;">हिंदी</span>
+      </div>
+      <!-- AUTO VIDEO CARD -->
+      <div class="avideo-card" id="avc-1" onclick="toggleAVC('1')">
+        <div class="avideo-inner">
+          <div class="avideo-bg-gradient" style="--vc-from:#1e1b4b;--vc-to:#4338ca;"></div>
+          <div class="avideo-wave"></div>
+          <div class="avideo-particle"></div><div class="avideo-particle"></div><div class="avideo-particle"></div><div class="avideo-particle"></div>
+          <div class="avideo-presenter"><div class="avideo-avatar">🚗</div></div>
+          <div class="avideo-title">Start earning with Carrum Today!</div>
+          <div class="avideo-top-controls">
+            <div class="avideo-lang-btn" onclick="event.stopPropagation();toggleAVCLang('1')">A</div>
+            <button class="avideo-mute-btn" id="mute-1" onclick="event.stopPropagation();toggleAVCMute('1')">🔊</button>
+          </div>
+          <div class="avideo-play-overlay hidden" id="overlay-1"><div class="avideo-big-play">▶</div></div>
+          <div class="avideo-bottom">
+            <button class="avideo-play-pause" id="pp-1" onclick="event.stopPropagation();toggleAVC('1')">⏸</button>
+            <div class="avideo-prog-bar" onclick="event.stopPropagation();seekAVC('1',event)"><div class="avideo-prog-fill" id="fill-1"></div></div>
+            <span class="avideo-time" id="time-1">0:00 / 1:30</span>
+          </div>
+        </div>
+      </div>
+      <div class="screen-content" style="gap:12px; padding-top:12px;">
+        <div>
+          <div class="hero-title" data-translate="hero_title">Start earning <br>with a vehicle &ndash; <br><span data-translate="hero_span">no ownership needed</span></div>
+          <div class="hero-sub" style="margin-top:6px;" data-translate="hero_subtitle">Drive with trusted fleet partners and start earning through Uber.</div>
+        </div>
+        <div class="stats-row">
+          <div class="stat-item"><div class="stat-num">10,000+</div><div class="stat-label">Drivers</div></div>
+          <div class="stat-item"><div class="stat-num">50+</div><div class="stat-label">Cities</div></div>
+          <div class="stat-item"><div class="stat-num">4.6 ★</div><div class="stat-label">Rating</div></div>
+          <div class="stat-item"><div class="stat-num">🔒</div><div class="stat-label">Safe Deposit</div></div>
+        </div>
+        <div class="testimonial">
+          <div class="avatar-stack">
+            <div class="avatar" style="background:#fde68a;">R</div>
+            <div class="avatar" style="background:#bbf7d0;">M</div>
+            <div class="avatar" style="background:#c7d2fe;">S</div>
+          </div>
+          <div class="testimonial-text"><strong>Ravi, Delhi</strong> &ldquo;Within 5 days I got vehicle and started earning.&rdquo;</div>
+        </div>
+        <button class="btn btn-primary" onclick="goTo(2)">Check Eligibility</button>
+        <div class="trust-badge">🔒 Trusted by thousands of drivers across India</div>
+      </div>
+    </div>
+
+    <!-- ===== SCREEN 2: OTP Login ===== -->
+    <div class="screen" id="screen-2">
+      <div class="back-header"><button class="back-btn" onclick="goTo(1)">←</button></div>
+      <div class="screen-content" style="padding-top:4px;">
+        <div style="display:flex; justify-content:flex-end; gap:8px;">
+          <div class="lang-chip active" onclick="setLanguage('en')">English</div>
+          <div class="lang-chip" onclick="setLanguage('hi')">हिंदी</div>
+          <div class="lang-chip" onclick="setLanguage('ta')">தமிழ்</div>
+        </div>
+        <!-- VIDEO CARD for login screen -->
+        <div class="avideo-card" id="avc-2" onclick="toggleAVC('2')">
+          <div class="avideo-inner">
+            <div class="avideo-bg-gradient" style="--vc-from:#0c4a6e;--vc-to:#0284c7;"></div>
+            <div class="avideo-wave"></div>
+            <div class="avideo-particle"></div><div class="avideo-particle"></div><div class="avideo-particle"></div><div class="avideo-particle"></div>
+            <div class="avideo-presenter"><div class="avideo-avatar">📱</div></div>
+            <div class="avideo-title">How to Register &amp; Login Safely</div>
+            <div class="avideo-top-controls">
+              <div class="avideo-lang-btn" onclick="event.stopPropagation();toggleAVCLang('2')">A</div>
+              <button class="avideo-mute-btn" id="mute-2" onclick="event.stopPropagation();toggleAVCMute('2')">🔊</button>
+            </div>
+            <div class="avideo-play-overlay hidden" id="overlay-2"><div class="avideo-big-play">▶</div></div>
+            <div class="avideo-bottom">
+              <button class="avideo-play-pause" id="pp-2" onclick="event.stopPropagation();toggleAVC('2')">⏸</button>
+              <div class="avideo-prog-bar" onclick="event.stopPropagation();seekAVC('2',event)"><div class="avideo-prog-fill" id="fill-2"></div></div>
+              <span class="avideo-time" id="time-2">0:00 / 0:45</span>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="section-title" data-translate="enter_phone">Enter your mobile number</div>
+          <div class="section-sub" style="margin-top:4px;" data-translate="phone_subtitle">We'll check your eligibility instantly</div>
+        </div>
+        <div class="phone-input-row">
+          <div class="country-code">+91</div>
+          <input class="phone-input" id="phone-input" type="tel" value="98765 43210" placeholder="Enter mobile number">
+        </div>
+        <button class="btn btn-primary" onclick="requestOtp()" data-translate="get_otp">Get OTP</button>
+        <div class="secure-note" data-translate="secure_note">🔒 Secure &nbsp;|&nbsp; We never share your information.</div>
+        <div class="login-link"><span data-translate="already_started">Already started?</span> <span onclick="requestOtp()" style="color:var(--primary);font-weight:600;" data-translate="login_otp">Login with OTP</span></div>
+      </div>
+    </div>
+
+    <!-- ===== SCREEN OTP ===== -->
+    <div class="screen" id="screen-otp">
+      <div class="back-header"><button class="back-btn" onclick="goTo(2)">←</button></div>
+      <div class="screen-content" style="padding-top:8px;">
+        <div>
+          <div class="section-title">Verify Phone Number</div>
+          <div class="section-sub" style="margin-top:4px;">We sent a 4-digit code to <span id="otp-phone-display" style="font-weight:600;color:var(--text);">+91 98765 43210</span></div>
+        </div>
+        <div style="display:flex;justify-content:center;gap:12px;margin:20px 0;">
+          <input type="text" maxlength="1" class="otp-digit" id="otp-1" oninput="focusNext(this,'otp-2')" onkeydown="focusPrev(this,event,'')" style="width:52px;height:52px;text-align:center;font-size:24px;font-weight:700;border:1.5px solid var(--border);border-radius:var(--radius-sm);outline:none;">
+          <input type="text" maxlength="1" class="otp-digit" id="otp-2" oninput="focusNext(this,'otp-3')" onkeydown="focusPrev(this,event,'otp-1')" style="width:52px;height:52px;text-align:center;font-size:24px;font-weight:700;border:1.5px solid var(--border);border-radius:var(--radius-sm);outline:none;">
+          <input type="text" maxlength="1" class="otp-digit" id="otp-3" oninput="focusNext(this,'otp-4')" onkeydown="focusPrev(this,event,'otp-2')" style="width:52px;height:52px;text-align:center;font-size:24px;font-weight:700;border:1.5px solid var(--border);border-radius:var(--radius-sm);outline:none;">
+          <input type="text" maxlength="1" class="otp-digit" id="otp-4" oninput="checkAndSubmitOtp()" onkeydown="focusPrev(this,event,'otp-3')" style="width:52px;height:52px;text-align:center;font-size:24px;font-weight:700;border:1.5px solid var(--border);border-radius:var(--radius-sm);outline:none;">
+        </div>
+        <button class="btn btn-primary" onclick="verifyOtp()">Verify &amp; Continue</button>
+        <div style="text-align:center;font-size:14px;color:var(--text-secondary);margin-top:12px;">
+          <span id="otp-timer-label">Resend OTP in <span id="otp-timer" style="font-weight:600;color:var(--primary);">59s</span></span>
+          <span id="resend-btn" style="color:var(--primary);font-weight:600;cursor:pointer;display:none;" onclick="resendOtp()">Resend OTP</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== SCREEN 3: 3 Steps ===== -->
+    <div class="screen" id="screen-3">
+      <div class="avideo-card" id="avc-3" onclick="toggleAVC('3')">
+        <div class="avideo-inner">
+          <div class="avideo-bg-gradient" style="--vc-from:#064e3b;--vc-to:#059669;"></div>
+          <div class="avideo-wave"></div>
+          <div class="avideo-particle"></div><div class="avideo-particle"></div><div class="avideo-particle"></div><div class="avideo-particle"></div>
+          <div class="avideo-presenter"><div class="avideo-avatar">📋</div></div>
+          <div class="avideo-title">3 Steps to Start Earning with Carrum</div>
+          <div class="avideo-top-controls">
+            <div class="avideo-lang-btn" onclick="event.stopPropagation();toggleAVCLang('3')">A</div>
+            <button class="avideo-mute-btn" id="mute-3" onclick="event.stopPropagation();toggleAVCMute('3')">🔊</button>
+          </div>
+          <div class="avideo-play-overlay hidden" id="overlay-3"><div class="avideo-big-play">▶</div></div>
+          <div class="avideo-bottom">
+            <button class="avideo-play-pause" id="pp-3" onclick="event.stopPropagation();toggleAVC('3')">⏸</button>
+            <div class="avideo-prog-bar" onclick="event.stopPropagation();seekAVC('3',event)"><div class="avideo-prog-fill" id="fill-3"></div></div>
+            <span class="avideo-time" id="time-3">0:00 / 1:00</span>
+          </div>
+        </div>
+      </div>
+      <div class="screen-content" style="padding-top:14px;">
+        <div style="text-align:center;"><div class="section-title" style="font-size:20px;">Start earning in 3 simple steps</div></div>
+        <div class="step-card"><div class="step-num">1</div><div><div class="step-title">Choose your plan</div><div class="step-desc">Pick the plan that suits you</div></div></div>
+        <div class="step-card"><div class="step-num">2</div><div><div class="step-title">Pay refundable ₹5,000 deposit</div><div class="step-desc">Secure your vehicle slot</div></div></div>
+        <div class="step-card"><div class="step-num">3</div><div><div class="step-title">Visit hub &amp; start driving</div><div class="step-desc">Get your vehicle and start earning</div></div></div>
+        <div class="earning-banner"><div class="big">Earn up to ₹25,000/week*</div><div class="sub">*Depends on trips and hours driven</div></div>
+        <div class="icons-row">
+          <div class="icon-item"><div class="icon">🚗</div><div class="label">No ownership</div></div>
+          <div class="icon-item"><div class="icon">💰</div><div class="label">Flexible Earning</div></div>
+          <div class="icon-item"><div class="icon">🤝</div><div class="label">Trusted Support</div></div>
+        </div>
+        <button class="btn btn-primary" onclick="goTo(4)">Find my best plan</button>
+      </div>
+    </div>
+
+    <!-- ===== SCREEN 4: Goal Capture ===== -->
+    <div class="screen" id="screen-4">
+      <div class="avideo-card" id="avc-4" onclick="toggleAVC('4')">
+        <div class="avideo-inner">
+          <div class="avideo-bg-gradient" style="--vc-from:#92400e;--vc-to:#d97706;"></div>
+          <div class="avideo-wave"></div>
+          <div class="avideo-particle"></div><div class="avideo-particle"></div><div class="avideo-particle"></div><div class="avideo-particle"></div>
+          <div class="avideo-presenter"><div class="avideo-avatar">🎯</div></div>
+          <div class="avideo-title">Plan A vs Plan B — Which Suits You?</div>
+          <div class="avideo-top-controls">
+            <div class="avideo-lang-btn" onclick="event.stopPropagation();toggleAVCLang('4')">A</div>
+            <button class="avideo-mute-btn" id="mute-4" onclick="event.stopPropagation();toggleAVCMute('4')">🔊</button>
+          </div>
+          <div class="avideo-play-overlay hidden" id="overlay-4"><div class="avideo-big-play">▶</div></div>
+          <div class="avideo-bottom">
+            <button class="avideo-play-pause" id="pp-4" onclick="event.stopPropagation();toggleAVC('4')">⏸</button>
+            <div class="avideo-prog-bar" onclick="event.stopPropagation();seekAVC('4',event)"><div class="avideo-prog-fill" id="fill-4"></div></div>
+            <span class="avideo-time" id="time-4">0:00 / 1:15</span>
+          </div>
+        </div>
+      </div>
+      <div class="screen-content" style="padding-top:14px;">
+        <div>
+          <div class="section-title" data-translate="looking_for">What are you looking for?</div>
+          <div class="section-sub" data-translate="suggest_right_plan">This helps us suggest the right plan</div>
+        </div>
+        <div class="option-card selected" onclick="selectOption(this,'flexible')">
+          <div class="option-radio"></div>
+          <div><div class="option-title">Flexible daily earnings</div><div class="option-desc">Drive when I want, earn flexibly</div></div>
+        </div>
+        <div class="option-card" onclick="selectOption(this,'stable')">
+          <div class="option-radio"></div>
+          <div><div class="option-title">Stable monthly income</div><div class="option-desc">Fixed salary with less risk</div></div>
+        </div>
+        <div class="option-card" onclick="selectOption(this,'not_sure')">
+          <div class="option-radio"></div>
+          <div><div class="option-title">Not sure yet</div><div class="option-desc">Help me decide</div></div>
+        </div>
+        <div>
+          <div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:8px;">Driving experience?</div>
+          <div class="exp-row">
+            <div class="exp-chip" onclick="selectExp(this,'new')">New driver</div>
+            <div class="exp-chip selected" onclick="selectExp(this,'mid')">1–3 years</div>
+            <div class="exp-chip" onclick="selectExp(this,'pro')">3+ years</div>
+          </div>
+        </div>
+        <button class="btn btn-primary" onclick="generatePlanRecommendation()">Continue</button>
+      </div>
+    </div>
+
+    <!-- ===== SCREEN 5: Plan Recommendation ===== -->
+    <div class="screen" id="screen-5">
+      <div class="back-header"><button class="back-btn" onclick="goTo(4)">←</button></div>
+      <div class="avideo-card" id="avc-5" onclick="toggleAVC('5')">
+        <div class="avideo-inner">
+          <div class="avideo-bg-gradient" style="--vc-from:#4c1d95;--vc-to:#7c3aed;"></div>
+          <div class="avideo-wave"></div>
+          <div class="avideo-particle"></div><div class="avideo-particle"></div><div class="avideo-particle"></div><div class="avideo-particle"></div>
+          <div class="avideo-presenter"><div class="avideo-avatar">🏆</div></div>
+          <div class="avideo-title">Your Recommended Plan is Ready!</div>
+          <div class="avideo-top-controls">
+            <div class="avideo-lang-btn" onclick="event.stopPropagation();toggleAVCLang('5')">A</div>
+            <button class="avideo-mute-btn" id="mute-5" onclick="event.stopPropagation();toggleAVCMute('5')">🔊</button>
+          </div>
+          <div class="avideo-play-overlay hidden" id="overlay-5"><div class="avideo-big-play">▶</div></div>
+          <div class="avideo-bottom">
+            <button class="avideo-play-pause" id="pp-5" onclick="event.stopPropagation();toggleAVC('5')">⏸</button>
+            <div class="avideo-prog-bar" onclick="event.stopPropagation();seekAVC('5',event)"><div class="avideo-prog-fill" id="fill-5"></div></div>
+            <span class="avideo-time" id="time-5">0:00 / 1:00</span>
+          </div>
+        </div>
+      </div>
+      <div class="screen-content" style="padding-top:12px;">
+        <div><div class="section-title">Recommended for you</div><div class="section-sub">Based on your answers</div></div>
+        <div class="plan-card">
+          <div style="margin-bottom:8px;"><span class="recommended-badge">RECOMMENDED</span></div>
+          <div style="display:flex;align-items:center;gap:12px;">
+            <div><div class="plan-name" id="rec-plan-name">Plan A</div><div class="plan-tagline" id="rec-plan-tagline">Flexible earning with rental vehicle</div></div>
+            <div style="margin-left:auto;font-size:40px;" id="rec-plan-emoji">🚙</div>
+          </div>
+          <div class="plan-features" id="rec-plan-features">
+            <div class="plan-feature">Flexible hours</div>
+            <div class="plan-feature">Start quickly</div>
+            <div class="plan-feature">No car ownership</div>
+          </div>
+        </div>
+        <div class="earning-range">
+          <div class="range" id="rec-plan-range">₹18,000 – ₹30,000</div>
+          <div class="label" id="rec-plan-range-sub">Potential weekly earning</div>
+        </div>
+        <div style="padding:12px;background:var(--bg);border-radius:var(--radius-sm);">
+          <div style="font-size:13px;font-weight:600;margin-bottom:4px;" id="rec-plan-suitability-title">Why Plan A suits you</div>
+          <div style="font-size:13px;color:var(--text-secondary);" id="rec-plan-suitability-desc">Flexible earnings on your own terms.</div>
+        </div>
+        <div class="compare-link" id="rec-compare-link" onclick="toggleComparePlan()">Compare with Plan B</div>
+        <button class="btn btn-primary" onclick="goTo(6)">Check Eligibility</button>
+      </div>
+    </div>
+
+    <!-- ===== SCREEN 6: Eligibility Wizard ===== -->
+    <div class="screen" id="screen-6">
+      <div class="avideo-card" id="avc-6" onclick="toggleAVC('6')">
+        <div class="avideo-inner">
+          <div class="avideo-bg-gradient" style="--vc-from:#1e3a8a;--vc-to:#2563eb;"></div>
+          <div class="avideo-wave"></div>
+          <div class="avideo-particle"></div><div class="avideo-particle"></div><div class="avideo-particle"></div><div class="avideo-particle"></div>
+          <div class="avideo-presenter"><div class="avideo-avatar">✅</div></div>
+          <div class="avideo-title">Eligibility Requirements Explained</div>
+          <div class="avideo-top-controls">
+            <div class="avideo-lang-btn" onclick="event.stopPropagation();toggleAVCLang('6')">A</div>
+            <button class="avideo-mute-btn" id="mute-6" onclick="event.stopPropagation();toggleAVCMute('6')">🔊</button>
+          </div>
+          <div class="avideo-play-overlay hidden" id="overlay-6"><div class="avideo-big-play">▶</div></div>
+          <div class="avideo-bottom">
+            <button class="avideo-play-pause" id="pp-6" onclick="event.stopPropagation();toggleAVC('6')">⏸</button>
+            <div class="avideo-prog-bar" onclick="event.stopPropagation();seekAVC('6',event)"><div class="avideo-prog-fill" id="fill-6"></div></div>
+            <span class="avideo-time" id="time-6">0:00 / 1:30</span>
+          </div>
+        </div>
+      </div>
+      <div class="progress-bar-wrap" style="padding-top:10px;">
+        <div style="font-size:12px;color:var(--text-muted);margin-bottom:6px;" id="el-wizard-step-label">Step 1 of 5</div>
+        <div class="progress-steps" id="el-progress-steps">
+          <div class="progress-step done"></div><div class="progress-step"></div><div class="progress-step"></div><div class="progress-step"></div><div class="progress-step"></div>
+        </div>
+      </div>
+      <div class="screen-content el-step-content" id="el-step-1" style="padding-top:12px;">
+        <div><div class="section-title">Which city do you want to drive in?</div><div class="section-sub" style="margin-top:4px;">Shows nearest hubs and relevant plans.</div></div>
+        <select class="city-select" id="eligibility-city"><option value="" disabled>Select your city</option><option selected value="Delhi">Delhi</option><option value="Mumbai">Mumbai</option><option value="Bangalore">Bangalore</option><option value="Hyderabad">Hyderabad</option><option value="Chennai">Chennai</option></select>
+        <div class="city-illustration">🏙️</div>
+        <div style="flex:1;"></div>
+        <button class="btn btn-primary" onclick="nextEligibilityStep()">Continue</button>
+      </div>
+      <div class="screen-content el-step-content" id="el-step-2" style="padding-top:12px;display:none;">
+        <div><div class="section-title">Do you have a Commercial Driving License?</div><div class="section-sub" style="margin-top:4px;">Required by government norms.</div></div>
+        <div class="option-card" onclick="selectEligibilityOption(this,'dl',true)"><div class="option-radio"></div><div><div class="option-title">Yes, I have a Commercial DL</div><div class="option-desc">Yellow badge / LMV Commercial</div></div></div>
+        <div class="option-card" onclick="selectEligibilityOption(this,'dl',false)"><div class="option-radio"></div><div><div class="option-title">No, I have a Private DL</div><div class="option-desc">Personal vehicle DL only</div></div></div>
+        <div style="flex:1;"></div>
+        <div style="display:flex;gap:8px;"><button class="btn btn-outline" style="width:40%;" onclick="prevEligibilityStep()">Back</button><button class="btn btn-primary" style="width:60%;" onclick="nextEligibilityStep()">Continue</button></div>
+      </div>
+      <div class="screen-content el-step-content" id="el-step-3" style="padding-top:12px;display:none;">
+        <div><div class="section-title">What is your age?</div><div class="section-sub" style="margin-top:4px;">Must be 21 years or older.</div></div>
+        <div class="option-card" onclick="selectEligibilityOption(this,'age',true)"><div class="option-radio"></div><div><div class="option-title">21 years or older</div></div></div>
+        <div class="option-card" onclick="selectEligibilityOption(this,'age',false)"><div class="option-radio"></div><div><div class="option-title">Under 21 years</div></div></div>
+        <div style="flex:1;"></div>
+        <div style="display:flex;gap:8px;"><button class="btn btn-outline" style="width:40%;" onclick="prevEligibilityStep()">Back</button><button class="btn btn-primary" style="width:60%;" onclick="nextEligibilityStep()">Continue</button></div>
+      </div>
+      <div class="screen-content el-step-content" id="el-step-4" style="padding-top:12px;display:none;">
+        <div><div class="section-title">Do you have an Android Phone?</div><div class="section-sub" style="margin-top:4px;">Uber Partner App runs best on Android.</div></div>
+        <div class="option-card" onclick="selectEligibilityOption(this,'android',true)"><div class="option-radio"></div><div><div class="option-title">Yes, Android Phone</div></div></div>
+        <div class="option-card" onclick="selectEligibilityOption(this,'android',false)"><div class="option-radio"></div><div><div class="option-title">No / iPhone</div></div></div>
+        <div style="flex:1;"></div>
+        <div style="display:flex;gap:8px;"><button class="btn btn-outline" style="width:40%;" onclick="prevEligibilityStep()">Back</button><button class="btn btn-primary" style="width:60%;" onclick="nextEligibilityStep()">Continue</button></div>
+      </div>
+      <div class="screen-content el-step-content" id="el-step-5" style="padding-top:12px;display:none;">
+        <div><div class="section-title">Are you registered with Uber?</div></div>
+        <div class="option-card" onclick="selectEligibilityOption(this,'uber',true)"><div class="option-radio"></div><div><div class="option-title">Yes, registered with Uber</div></div></div>
+        <div class="option-card" onclick="selectEligibilityOption(this,'uber',true)"><div class="option-radio"></div><div><div class="option-title">No, but want to register</div><div class="option-desc">Our hub will help you</div></div></div>
+        <div class="option-card" onclick="selectEligibilityOption(this,'uber',false)"><div class="option-radio"></div><div><div class="option-title">No, and don't want to use Uber</div></div></div>
+        <div style="flex:1;"></div>
+        <div style="display:flex;gap:8px;"><button class="btn btn-outline" style="width:40%;" onclick="prevEligibilityStep()">Back</button><button class="btn btn-primary" style="width:60%;" onclick="evalEligibility()">Check Result</button></div>
+      </div>
+    </div>
+
+    <!-- ===== SCREEN 6B: Ineligible ===== -->
+    <div class="screen" id="screen-ineligible">
+      <div class="avideo-card" id="avc-6b" onclick="toggleAVC('6b')">
+        <div class="avideo-inner">
+          <div class="avideo-bg-gradient" style="--vc-from:#7c2d12;--vc-to:#c2410c;"></div>
+          <div class="avideo-wave"></div>
+          <div class="avideo-particle"></div><div class="avideo-particle"></div><div class="avideo-particle"></div><div class="avideo-particle"></div>
+          <div class="avideo-presenter"><div class="avideo-avatar">📝</div></div>
+          <div class="avideo-title">How to Get a Commercial Driving License</div>
+          <div class="avideo-top-controls">
+            <div class="avideo-lang-btn" onclick="event.stopPropagation();toggleAVCLang('6b')">A</div>
+            <button class="avideo-mute-btn" id="mute-6b" onclick="event.stopPropagation();toggleAVCMute('6b')">🔊</button>
+          </div>
+          <div class="avideo-play-overlay hidden" id="overlay-6b"><div class="avideo-big-play">▶</div></div>
+          <div class="avideo-bottom">
+            <button class="avideo-play-pause" id="pp-6b" onclick="event.stopPropagation();toggleAVC('6b')">⏸</button>
+            <div class="avideo-prog-bar" onclick="event.stopPropagation();seekAVC('6b',event)"><div class="avideo-prog-fill" id="fill-6b"></div></div>
+            <span class="avideo-time" id="time-6b">0:00 / 2:00</span>
+          </div>
+        </div>
+      </div>
+      <div class="result-center" style="padding-top:16px;">
+        <div class="big-check" style="background:var(--primary-light);border-color:var(--warn);animation:none;">⚠️</div>
+        <div class="result-title" style="font-size:22px;">Onboarding Status</div>
+        <div class="result-sub" id="ineligible-reason" style="font-weight:500;">Unable to proceed online.</div>
+      </div>
+      <div style="padding:0 20px;display:flex;flex-direction:column;gap:12px;">
+        <div style="background:var(--bg);border-radius:var(--radius-sm);padding:16px;"><div style="font-size:14px;font-weight:700;margin-bottom:6px;">Why this happened?</div><div style="font-size:13px;color:var(--text-secondary);" id="ineligible-details">Government rules require a commercial license and age 21+.</div></div>
+        <div style="background:var(--primary-light);border-radius:var(--radius-sm);padding:16px;text-align:center;">
+          <div style="font-size:14px;font-weight:700;color:var(--primary);margin-bottom:6px;">Need help getting a Commercial DL?</div>
+          <button class="btn btn-sm btn-primary" onclick="requestCallbackIneligible()">📞 Talk to DL Expert</button>
+        </div>
+      </div>
+      <div style="padding:16px 20px 20px;"><button class="btn btn-outline" onclick="goTo(1)">Back to Home</button></div>
+    </div>
+
+    <!-- ===== SCREEN 7: Eligible ===== -->
+    <div class="screen" id="screen-7">
+      <div class="avideo-card" id="avc-7" onclick="toggleAVC('7')">
+        <div class="avideo-inner">
+          <div class="avideo-bg-gradient" style="--vc-from:#14532d;--vc-to:#16a34a;"></div>
+          <div class="avideo-wave"></div>
+          <div class="avideo-particle"></div><div class="avideo-particle"></div><div class="avideo-particle"></div><div class="avideo-particle"></div>
+          <div class="avideo-presenter"><div class="avideo-avatar">🎉</div></div>
+          <div class="avideo-title">Congratulations! You're Eligible!</div>
+          <div class="avideo-top-controls">
+            <div class="avideo-lang-btn" onclick="event.stopPropagation();toggleAVCLang('7')">A</div>
+            <button class="avideo-mute-btn" id="mute-7" onclick="event.stopPropagation();toggleAVCMute('7')">🔊</button>
+          </div>
+          <div class="avideo-play-overlay hidden" id="overlay-7"><div class="avideo-big-play">▶</div></div>
+          <div class="avideo-bottom">
+            <button class="avideo-play-pause" id="pp-7" onclick="event.stopPropagation();toggleAVC('7')">⏸</button>
+            <div class="avideo-prog-bar" onclick="event.stopPropagation();seekAVC('7',event)"><div class="avideo-prog-fill" id="fill-7"></div></div>
+            <span class="avideo-time" id="time-7">0:00 / 1:00</span>
+          </div>
+        </div>
+      </div>
+      <div class="result-center" style="padding-top:16px;">
+        <div class="confetti">🎉 ✨ 🎊</div>
+        <div class="big-check">✅</div>
+        <div class="result-title">Great news!<br>You're eligible!</div>
+        <div class="result-sub">Continue with onboarding.</div>
+      </div>
+      <div class="next-steps">
+        <div style="font-size:13px;font-weight:600;color:var(--text-secondary);margin-bottom:4px;">Next steps</div>
+        <div class="next-step-item"><div class="step-circle">1</div><div style="font-size:14px;">Pay ₹5,000 refundable deposit</div></div>
+        <div class="next-step-item"><div class="step-circle">2</div><div style="font-size:14px;">Visit nearest hub</div></div>
+        <div class="next-step-item"><div class="step-circle">3</div><div style="font-size:14px;">Get vehicle and start earning</div></div>
+      </div>
+      <div style="padding:16px 20px 20px;display:flex;flex-direction:column;gap:10px;">
+        <button class="btn btn-primary" onclick="goTo(8)">See earning estimate</button>
+        <div class="whatsapp-btn" onclick="goTo(20)">💬 Talk to onboarding expert</div>
+      </div>
+    </div>
+
+    <!-- ===== SCREEN 8: Earnings Calculator ===== -->
+    <div class="screen" id="screen-8">
+      <div class="avideo-card" id="avc-8" onclick="toggleAVC('8')">
+        <div class="avideo-inner">
+          <div class="avideo-bg-gradient" style="--vc-from:#0e7490;--vc-to:#0891b2;"></div>
+          <div class="avideo-wave"></div>
+          <div class="avideo-particle"></div><div class="avideo-particle"></div><div class="avideo-particle"></div><div class="avideo-particle"></div>
+          <div class="avideo-presenter"><div class="avideo-avatar">💰</div></div>
+          <div class="avideo-title">How Much Can You Earn? Real Numbers</div>
+          <div class="avideo-top-controls">
+            <div class="avideo-lang-btn" onclick="event.stopPropagation();toggleAVCLang('8')">A</div>
+            <button class="avideo-mute-btn" id="mute-8" onclick="event.stopPropagation();toggleAVCMute('8')">🔊</button>
+          </div>
+          <div class="avideo-play-overlay hidden" id="overlay-8"><div class="avideo-big-play">▶</div></div>
+          <div class="avideo-bottom">
+            <button class="avideo-play-pause" id="pp-8" onclick="event.stopPropagation();toggleAVC('8')">⏸</button>
+            <div class="avideo-prog-bar" onclick="event.stopPropagation();seekAVC('8',event)"><div class="avideo-prog-fill" id="fill-8"></div></div>
+            <span class="avideo-time" id="time-8">0:00 / 1:30</span>
+          </div>
+        </div>
+      </div>
+      <div class="calc-section" style="padding-top:14px;">
+        <div class="slider-row"><span class="slider-label">Hours per day</span><span class="slider-val" id="hoursVal">10 hrs</span></div>
+        <input type="range" min="2" max="16" value="10" oninput="updateCalc()" id="hoursSlider">
+        <div class="slider-range"><span>2</span><span>16</span></div>
+      </div>
+      <div class="calc-section" style="padding-top:0;">
+        <div class="slider-row"><span class="slider-label">Days per week</span><span class="slider-val" id="daysVal">6 days</span></div>
+        <input type="range" min="3" max="7" value="6" oninput="updateCalc()" id="daysSlider">
+        <div class="slider-range"><span>3</span><span>7</span></div>
+      </div>
+      <div class="earnings-card">
+        <div class="earnings-row"><span class="earnings-label">Weekly earnings</span><span class="earnings-amount" id="weeklyEarning">₹24,000</span></div>
+        <div class="earnings-row"><span class="earnings-label">Monthly earnings</span><span class="earnings-amount" id="monthlyEarning">₹96,000</span></div>
+      </div>
+      <div class="disclaimer" style="margin-top:8px;padding-bottom:4px;">Earnings may vary based on trips, demand and driving behavior.</div>
+      <div style="padding:12px 20px 20px;"><button class="btn btn-primary" onclick="goTo(9)">Looks good, show me more</button></div>
+    </div>
+
+    <!-- ===== SCREEN 9: Success Stories ===== -->
+    <div class="screen" id="screen-9">
+      <div class="avideo-card" id="avc-9" onclick="toggleAVC('9')">
+        <div class="avideo-inner">
+          <div class="avideo-bg-gradient" style="--vc-from:#7f1d1d;--vc-to:#dc2626;"></div>
+          <div class="avideo-wave"></div>
+          <div class="avideo-particle"></div><div class="avideo-particle"></div><div class="avideo-particle"></div><div class="avideo-particle"></div>
+          <div class="avideo-presenter"><div class="avideo-avatar">⭐</div></div>
+          <div class="avideo-title">Real Drivers Share Their Journey</div>
+          <div class="avideo-top-controls">
+            <div class="avideo-lang-btn" onclick="event.stopPropagation();toggleAVCLang('9')">A</div>
+            <button class="avideo-mute-btn" id="mute-9" onclick="event.stopPropagation();toggleAVCMute('9')">🔊</button>
+          </div>
+          <div class="avideo-play-overlay hidden" id="overlay-9"><div class="avideo-big-play">▶</div></div>
+          <div class="avideo-bottom">
+            <button class="avideo-play-pause" id="pp-9" onclick="event.stopPropagation();toggleAVC('9')">⏸</button>
+            <div class="avideo-prog-bar" onclick="event.stopPropagation();seekAVC('9',event)"><div class="avideo-prog-fill" id="fill-9"></div></div>
+            <span class="avideo-time" id="time-9">0:00 / 2:00</span>
+          </div>
+        </div>
+      </div>
+      <div class="screen-content" style="padding-top:12px;">
+        <div style="text-align:center;"><div class="section-title">Driver success stories</div></div>
+        <div class="story-card" onclick="showToast('Playing Ravi\u0027s story!','🎬')">
+          <div class="story-thumb"><div class="story-play">▶</div></div>
+          <div class="story-info"><div class="story-name">Ravi, 28, Delhi</div><div class="story-earning">Earning ₹26,000/week with Plan A</div></div>
+        </div>
+        <div class="story-card" onclick="showToast('Playing Imran\u0027s story!','🎬')">
+          <div class="story-thumb" style="background:linear-gradient(135deg,#064e3b,#059669);"><div class="story-play">▶</div></div>
+          <div class="story-info"><div class="story-name">Imran, 32, Gurgaon</div><div class="story-earning">Earning ₹22,000/week with Plan A</div></div>
+        </div>
+        <div class="counter-row">
+          <div class="counter-item"><div class="counter-num">10,000+</div><div class="counter-label">Happy Drivers</div></div>
+          <div class="counter-item"><div class="counter-num">4.6 ⭐</div><div class="counter-label">Avg Rating</div></div>
+          <div class="counter-item"><div class="counter-num">50+</div><div class="counter-label">Cities</div></div>
+        </div>
+        <button class="btn btn-primary" onclick="goTo(10)">Next</button>
+      </div>
+    </div>
+
+    <!-- ===== SCREEN 10: Hub Credibility ===== -->
+    <div class="screen" id="screen-10">
+      <div class="avideo-card" id="avc-10" onclick="toggleAVC('10')">
+        <div class="avideo-inner">
+          <div class="avideo-bg-gradient" style="--vc-from:#1e293b;--vc-to:#475569;"></div>
+          <div class="avideo-wave"></div>
+          <div class="avideo-particle"></div><div class="avideo-particle"></div><div class="avideo-particle"></div><div class="avideo-particle"></div>
+          <div class="avideo-presenter"><div class="avideo-avatar">🏢</div></div>
+          <div class="avideo-title">Inside a Carrum Hub — What to Expect</div>
+          <div class="avideo-top-controls">
+            <div class="avideo-lang-btn" onclick="event.stopPropagation();toggleAVCLang('10')">A</div>
+            <button class="avideo-mute-btn" id="mute-10" onclick="event.stopPropagation();toggleAVCMute('10')">🔊</button>
+          </div>
+          <div class="avideo-play-overlay hidden" id="overlay-10"><div class="avideo-big-play">▶</div></div>
+          <div class="avideo-bottom">
+            <button class="avideo-play-pause" id="pp-10" onclick="event.stopPropagation();toggleAVC('10')">⏸</button>
+            <div class="avideo-prog-bar" onclick="event.stopPropagation();seekAVC('10',event)"><div class="avideo-prog-fill" id="fill-10"></div></div>
+            <span class="avideo-time" id="time-10">0:00 / 1:30</span>
+          </div>
+        </div>
+      </div>
+      <div class="screen-content" style="padding-top:12px;">
+        <div class="hub-feature"><span class="hub-icon">📍</span><div><div style="font-size:14px;font-weight:600;">50+ Hubs across India</div></div></div>
+        <div class="hub-feature"><span class="hub-icon">✅</span><div><div style="font-size:14px;font-weight:600;">Verified vehicles &amp; clean processes</div></div></div>
+        <div class="hub-feature"><span class="hub-icon">🤝</span><div><div style="font-size:14px;font-weight:600;">On-ground support at every step</div></div></div>
+        <div class="hub-grid"><div class="hub-thumb">🚗</div><div class="hub-thumb">🏗</div><div class="hub-thumb">👔</div><div class="hub-thumb">📋</div></div>
+        <button class="btn btn-primary" onclick="goTo(11)">Next</button>
+      </div>
+    </div>
+
+    <!-- ===== SCREEN 11: Refund ===== -->
+    <div class="screen" id="screen-11">
+      <div class="avideo-card" id="avc-11" onclick="toggleAVC('11')">
+        <div class="avideo-inner">
+          <div class="avideo-bg-gradient" style="--vc-from:#172554;--vc-to:#1d4ed8;"></div>
+          <div class="avideo-wave"></div>
+          <div class="avideo-particle"></div><div class="avideo-particle"></div><div class="avideo-particle"></div><div class="avideo-particle"></div>
+          <div class="avideo-presenter"><div class="avideo-avatar">🔄</div></div>
+          <div class="avideo-title">Your ₹5,000 Deposit — How Refund Works</div>
+          <div class="avideo-top-controls">
+            <div class="avideo-lang-btn" onclick="event.stopPropagation();toggleAVCLang('11')">A</div>
+            <button class="avideo-mute-btn" id="mute-11" onclick="event.stopPropagation();toggleAVCMute('11')">🔊</button>
+          </div>
+          <div class="avideo-play-overlay hidden" id="overlay-11"><div class="avideo-big-play">▶</div></div>
+          <div class="avideo-bottom">
+            <button class="avideo-play-pause" id="pp-11" onclick="event.stopPropagation();toggleAVC('11')">⏸</button>
+            <div class="avideo-prog-bar" onclick="event.stopPropagation();seekAVC('11',event)"><div class="avideo-prog-fill" id="fill-11"></div></div>
+            <span class="avideo-time" id="time-11">0:00 / 1:00</span>
+          </div>
+        </div>
+      </div>
+      <div class="screen-content" style="padding-top:12px;">
+        <div class="amount-banner"><div class="amount">₹5,000</div><div style="font-size:14px;color:var(--text-secondary);margin-top:4px;">is safe and refundable</div></div>
+        <div class="refund-item"><div class="refund-icon">🔄</div><div><div class="refund-title">Full refund if you choose not to continue at the hub</div></div></div>
+        <div class="refund-item"><div class="refund-icon">⏱️</div><div><div class="refund-title">Refund in 5–7 working days to your account</div></div></div>
+        <div class="refund-item"><div class="refund-icon">💎</div><div><div class="refund-title">No hidden charges. 100% transparent.</div></div></div>
+        <div style="padding:12px;background:var(--primary-light);border-radius:var(--radius-sm);font-size:13px;color:var(--text-secondary);">This deposit confirms your intent and reserves a vehicle for you.</div>
+        <button class="btn btn-primary" onclick="goTo(12)">Understood</button>
+      </div>
+    </div>
+
+    <!-- ===== SCREEN 12: FAQ ===== -->
+    <div class="screen" id="screen-12">
+      <div class="avideo-card" id="avc-12" onclick="toggleAVC('12')">
+        <div class="avideo-inner">
+          <div class="avideo-bg-gradient" style="--vc-from:#2e1065;--vc-to:#6d28d9;"></div>
+          <div class="avideo-wave"></div>
+          <div class="avideo-particle"></div><div class="avideo-particle"></div><div class="avideo-particle"></div><div class="avideo-particle"></div>
+          <div class="avideo-presenter"><div class="avideo-avatar">❓</div></div>
+          <div class="avideo-title">Top Questions Answered by Carrum Team</div>
+          <div class="avideo-top-controls">
+            <div class="avideo-lang-btn" onclick="event.stopPropagation();toggleAVCLang('12')">A</div>
+            <button class="avideo-mute-btn" id="mute-12" onclick="event.stopPropagation();toggleAVCMute('12')">🔊</button>
+          </div>
+          <div class="avideo-play-overlay hidden" id="overlay-12"><div class="avideo-big-play">▶</div></div>
+          <div class="avideo-bottom">
+            <button class="avideo-play-pause" id="pp-12" onclick="event.stopPropagation();toggleAVC('12')">⏸</button>
+            <div class="avideo-prog-bar" onclick="event.stopPropagation();seekAVC('12',event)"><div class="avideo-prog-fill" id="fill-12"></div></div>
+            <span class="avideo-time" id="time-12">0:00 / 2:00</span>
+          </div>
+        </div>
+      </div>
+      <div class="screen-content" style="padding-top:12px;">
+        <div class="section-title">Common questions</div>
+        <div class="faq-item open"><div class="faq-q" onclick="toggleFaq(this)">Is my ₹5,000 safe? <span>▾</span></div><div class="faq-a">Yes! Your ₹5,000 is fully refundable if you don't continue at the hub — returned in 5–7 working days.</div></div>
+        <div class="faq-item"><div class="faq-q" onclick="toggleFaq(this)">What happens after I pay? <span>▾</span></div><div class="faq-a">Our team confirms your hub visit. Bring your documents and you'll get started with a vehicle on the same day.</div></div>
+        <div class="faq-item"><div class="faq-q" onclick="toggleFaq(this)">When will I get the vehicle? <span>▾</span></div><div class="faq-a">You get the vehicle on the day of your hub visit after document verification — usually within 24–48 hrs.</div></div>
+        <div class="faq-item"><div class="faq-q" onclick="toggleFaq(this)">What documents are needed? <span>▾</span></div><div class="faq-a">Aadhaar Card, PAN Card, Commercial Driving License, Uber Partner App ID, and passport size photo.</div></div>
+        <div style="background:var(--bg);border-radius:var(--radius-sm);padding:14px;text-align:center;">
+          <div style="font-size:14px;font-weight:600;margin-bottom:8px;">Still have a question?</div>
+          <button class="btn btn-sm" style="background:#25D366;color:white;width:auto;padding:10px 20px;" onclick="goTo(20)">💬 Chat on WhatsApp</button>
+        </div>
+        <button class="btn btn-primary" onclick="goTo('doc-upload')">Continue</button>
+      </div>
+    </div>
+
+    <!-- ===== SCREEN DOC UPLOAD ===== -->
+    <div class="screen" id="doc-upload">
+      <div class="avideo-card" id="avc-doc-upload" onclick="toggleAVC('doc-upload')">
+        <div class="avideo-inner">
+          <div class="avideo-bg-gradient" style="--vc-from:#4f46e5;--vc-to:#818cf8;"></div>
+          <div class="avideo-wave"></div>
+          <div class="avideo-particle"></div><div class="avideo-particle"></div><div class="avideo-particle"></div>
+          <div class="avideo-play-overlay hidden" id="overlay-doc-upload"><div class="avideo-big-play" id="pp-doc-upload">⏸</div></div>
+          <div class="avideo-presenter"><div class="avideo-avatar">📄</div></div>
+          <div class="avideo-title">Upload documents</div>
+          <div class="avideo-controls">
+            <button class="avideo-btn" id="mute-doc-upload" onclick="event.stopPropagation(); toggleAVCMute('doc-upload')">🔊</button>
+            <button class="avideo-btn" onclick="event.stopPropagation(); switchAVCLang()">A / अ</button>
+          </div>
+          <div class="avideo-progress" onclick="event.stopPropagation(); seekAVC('doc-upload', event)"><div class="avideo-fill" id="fill-doc-upload"></div><div class="avideo-time" id="time-doc-upload">0:00 / 0:45</div></div>
+        </div>
+      </div>
+      <div class="screen-content">
+        <div class="back-header" style="padding:0; margin-bottom: 8px;">
+          <button class="back-btn" onclick="goTo(12)">←</button>
+          <div>
+            <div class="section-title">Identity Verification</div>
+            <div class="section-sub">Please upload your documents before deposit</div>
+          </div>
+        </div>
+
+        <div class="doc-upload-card" id="doc-aadhaar" onclick="fakeUpload('aadhaar')">
+          <div class="doc-check">✓</div>
+          <div class="doc-upload-icon" id="icon-aadhaar">🪪</div>
+          <div class="doc-upload-title" id="title-aadhaar">Aadhaar Card</div>
+          <div class="doc-upload-sub" id="sub-aadhaar">Tap to upload front & back</div>
+        </div>
+
+        <div class="doc-upload-card" id="doc-dl" onclick="fakeUpload('dl')">
+          <div class="doc-check">✓</div>
+          <div class="doc-upload-icon" id="icon-dl">🚗</div>
+          <div class="doc-upload-title" id="title-dl">Driving License</div>
+          <div class="doc-upload-sub" id="sub-dl">Tap to upload front & back</div>
+        </div>
+
+        <div style="margin-top:auto;">
+          <button class="btn btn-primary" id="btn-doc-submit" onclick="goTo(13)" style="opacity:0.5; pointer-events:none;">Submit & Continue</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== SCREEN 13: Deposit Intro ===== -->
+    <div class="screen" id="screen-13">
+      <div class="avideo-card" id="avc-13" onclick="toggleAVC('13')">
+        <div class="avideo-inner">
+          <div class="avideo-bg-gradient" style="--vc-from:#064e3b;--vc-to:#10b981;"></div>
+          <div class="avideo-wave"></div>
+          <div class="avideo-particle"></div><div class="avideo-particle"></div><div class="avideo-particle"></div><div class="avideo-particle"></div>
+          <div class="avideo-presenter"><div class="avideo-avatar">🛡️</div></div>
+          <div class="avideo-title">Why We Ask for a Deposit &amp; How It Works</div>
+          <div class="avideo-top-controls">
+            <div class="avideo-lang-btn" onclick="event.stopPropagation();toggleAVCLang('13')">A</div>
+            <button class="avideo-mute-btn" id="mute-13" onclick="event.stopPropagation();toggleAVCMute('13')">🔊</button>
+          </div>
+          <div class="avideo-play-overlay hidden" id="overlay-13"><div class="avideo-big-play">▶</div></div>
+          <div class="avideo-bottom">
+            <button class="avideo-play-pause" id="pp-13" onclick="event.stopPropagation();toggleAVC('13')">⏸</button>
+            <div class="avideo-prog-bar" onclick="event.stopPropagation();seekAVC('13',event)"><div class="avideo-prog-fill" id="fill-13"></div></div>
+            <span class="avideo-time" id="time-13">0:00 / 1:00</span>
+          </div>
+        </div>
+      </div>
+      <div class="screen-content" style="padding-top:12px;">
+        <div class="deposit-hero"><div class="section-title" style="font-size:20px;text-align:center;">Reserve your vehicle<br>with ₹5,000 deposit</div></div>
+        <div class="deposit-illustration">🔐</div>
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <div class="benefit-item">Confirms your commitment</div>
+          <div class="benefit-item">Helps us allocate the right vehicle</div>
+          <div class="benefit-item">Refundable if you don't continue at the hub</div>
+        </div>
+        <button class="btn btn-primary" onclick="goTo(14)">Proceed to pay ₹5,000</button>
+      </div>
+    </div>
+
+    <!-- ===== SCREEN 14: Payment ===== -->
+    <div class="screen" id="screen-14">
+      <div class="avideo-card" id="avc-14" onclick="toggleAVC('14')">
+        <div class="avideo-inner">
+          <div class="avideo-bg-gradient" style="--vc-from:#0c4a6e;--vc-to:#0284c7;"></div>
+          <div class="avideo-wave"></div>
+          <div class="avideo-particle"></div><div class="avideo-particle"></div><div class="avideo-particle"></div><div class="avideo-particle"></div>
+          <div class="avideo-presenter"><div class="avideo-avatar">📲</div></div>
+          <div class="avideo-title">How to Pay Securely via UPI / QR</div>
+          <div class="avideo-top-controls">
+            <div class="avideo-lang-btn" onclick="event.stopPropagation();toggleAVCLang('14')">A</div>
+            <button class="avideo-mute-btn" id="mute-14" onclick="event.stopPropagation();toggleAVCMute('14')">🔊</button>
+          </div>
+          <div class="avideo-play-overlay hidden" id="overlay-14"><div class="avideo-big-play">▶</div></div>
+          <div class="avideo-bottom">
+            <button class="avideo-play-pause" id="pp-14" onclick="event.stopPropagation();toggleAVC('14')">⏸</button>
+            <div class="avideo-prog-bar" onclick="event.stopPropagation();seekAVC('14',event)"><div class="avideo-prog-fill" id="fill-14"></div></div>
+            <span class="avideo-time" id="time-14">0:00 / 0:45</span>
+          </div>
+        </div>
+      </div>
+      <div class="payment-amount">
+        <div style="font-size:13px;color:var(--text-secondary);margin-bottom:4px;">Pay Security Deposit</div>
+        <div class="amount">₹5,000</div>
+        <div class="refund-note">✅ 100% Refundable</div>
+        <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">if you don't continue at the hub</div>
+      </div>
+      <div style="padding:0 20px;display:flex;flex-direction:column;gap:12px;">
+        <div>
+          <div style="font-size:13px;color:var(--text-secondary);margin-bottom:8px;">We accept</div>
+          <div class="payment-methods"><div class="payment-method">UPI</div><div class="payment-method">G Pay</div><div class="payment-method">Paytm</div><div class="payment-method">PhonePe</div><div class="payment-method">+8 more</div></div>
+        </div>
+        <div>
+          <div style="font-size:13px;font-weight:600;margin-bottom:6px;">Pay with UPI ID</div>
+          <input class="upi-input" type="text" placeholder="name@upi">
+        </div>
+        <button class="btn btn-primary" onclick="goTo(15)">🔒 Pay ₹5,000</button>
+        <div class="secure-row">🔒 Secure &amp; Encrypted Payment</div>
+      </div>
+    </div>
+
+    <!-- ===== SCREEN 15: Payment Success ===== -->
+    <div class="screen" id="screen-15">
+      <div class="avideo-card" id="avc-15" onclick="toggleAVC('15')">
+        <div class="avideo-inner">
+          <div class="avideo-bg-gradient" style="--vc-from:#14532d;--vc-to:#15803d;"></div>
+          <div class="avideo-wave"></div>
+          <div class="avideo-particle"></div><div class="avideo-particle"></div><div class="avideo-particle"></div><div class="avideo-particle"></div>
+          <div class="avideo-presenter"><div class="avideo-avatar">✅</div></div>
+          <div class="avideo-title">Payment Done — What Happens Next?</div>
+          <div class="avideo-top-controls">
+            <div class="avideo-lang-btn" onclick="event.stopPropagation();toggleAVCLang('15')">A</div>
+            <button class="avideo-mute-btn" id="mute-15" onclick="event.stopPropagation();toggleAVCMute('15')">🔊</button>
+          </div>
+          <div class="avideo-play-overlay hidden" id="overlay-15"><div class="avideo-big-play">▶</div></div>
+          <div class="avideo-bottom">
+            <button class="avideo-play-pause" id="pp-15" onclick="event.stopPropagation();toggleAVC('15')">⏸</button>
+            <div class="avideo-prog-bar" onclick="event.stopPropagation();seekAVC('15',event)"><div class="avideo-prog-fill" id="fill-15"></div></div>
+            <span class="avideo-time" id="time-15">0:00 / 0:45</span>
+          </div>
+        </div>
+      </div>
+      <div class="success-center">
+        <div class="confetti">🎉</div>
+        <div class="success-icon">✅</div>
+        <div class="success-title">Payment successful!</div>
+        <div class="success-amount">₹5,000 received</div>
+      </div>
+      <div class="receipt-card">
+        <div class="receipt-row"><span class="receipt-label">Payment ID</span><span class="receipt-val" style="font-size:11px;">CPAY_20240524_123456</span></div>
+        <div class="receipt-row"><span class="receipt-label">Date &amp; Time</span><span class="receipt-val">24 May 2024, 12:30 PM</span></div>
+        <div class="receipt-row"><span class="receipt-label">Receipt sent to</span><span class="receipt-val">WhatsApp &amp; SMS</span></div>
+      </div>
+      <div style="padding:14px 20px 20px;display:flex;flex-direction:column;gap:10px;">
+        <button class="btn btn-primary" onclick="goTo(16)">Book my hub visit</button>
+        <button class="btn btn-outline" onclick="goTo(19)">Go to dashboard</button>
+      </div>
+    </div>
+
+    <!-- ===== SCREEN 16: Hub Booking ===== -->
+    <div class="screen" id="screen-16">
+      <div class="avideo-card" id="avc-16" onclick="toggleAVC('16')">
+        <div class="avideo-inner">
+          <div class="avideo-bg-gradient" style="--vc-from:#1e1b4b;--vc-to:#4338ca;"></div>
+          <div class="avideo-wave"></div>
+          <div class="avideo-particle"></div><div class="avideo-particle"></div><div class="avideo-particle"></div><div class="avideo-particle"></div>
+          <div class="avideo-presenter"><div class="avideo-avatar">📅</div></div>
+          <div class="avideo-title">How to Book Your Hub Visit Slot</div>
+          <div class="avideo-top-controls">
+            <div class="avideo-lang-btn" onclick="event.stopPropagation();toggleAVCLang('16')">A</div>
+            <button class="avideo-mute-btn" id="mute-16" onclick="event.stopPropagation();toggleAVCMute('16')">🔊</button>
+          </div>
+          <div class="avideo-play-overlay hidden" id="overlay-16"><div class="avideo-big-play">▶</div></div>
+          <div class="avideo-bottom">
+            <button class="avideo-play-pause" id="pp-16" onclick="event.stopPropagation();toggleAVC('16')">⏸</button>
+            <div class="avideo-prog-bar" onclick="event.stopPropagation();seekAVC('16',event)"><div class="avideo-prog-fill" id="fill-16"></div></div>
+            <span class="avideo-time" id="time-16">0:00 / 1:00</span>
+          </div>
+        </div>
+      </div>
+      <div class="screen-content" style="padding-top:12px;">
+        <div class="section-title">Hub Booking</div>
+        <div>
+          <div style="font-size:13px;font-weight:600;margin-bottom:6px;">Select nearest hub</div>
+          <select class="hub-select" id="booking-hub-select">
+            <option selected>Delhi – Alipur Hub (3.2 km away)</option>
+            <option>Delhi – Rohini Hub (8.1 km away)</option>
+            <option>Delhi – Dwarka Hub (12 km away)</option>
+          </select>
+        </div>
+        <div style="height:100px;background:linear-gradient(135deg,#e0e7ff,#c7d2fe);border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;font-size:36px;">🗺️</div>
+        <div>
+          <div style="font-size:13px;font-weight:600;margin-bottom:8px;">Choose date</div>
+          <div class="date-row">
+            <div class="date-chip" onclick="selectDateChip(this,'24','Fri')"><div class="day-name">Fri</div><div class="day-num">24</div></div>
+            <div class="date-chip selected" onclick="selectDateChip(this,'25','Sat')"><div class="day-name">Sat</div><div class="day-num">25</div></div>
+            <div class="date-chip" onclick="selectDateChip(this,'26','Sun')"><div class="day-name">Sun</div><div class="day-num">26</div></div>
+            <div class="date-chip" onclick="selectDateChip(this,'27','Mon')"><div class="day-name">Mon</div><div class="day-num">27</div></div>
+            <div class="date-chip" onclick="selectDateChip(this,'28','Tue')"><div class="day-name">Tue</div><div class="day-num">28</div></div>
+          </div>
+        </div>
+        <div>
+          <div style="font-size:13px;font-weight:600;margin-bottom:8px;">Choose time slot</div>
+          <div class="time-row">
+            <div class="time-chip" onclick="selectTimeChip(this,'10:00 AM')">10:00 AM</div>
+            <div class="time-chip selected" onclick="selectTimeChip(this,'12:00 PM')">12:00 PM</div>
+            <div class="time-chip" onclick="selectTimeChip(this,'02:00 PM')">02:00 PM</div>
+            <div class="time-chip" onclick="selectTimeChip(this,'04:00 PM')">04:00 PM</div>
+          </div>
+        </div>
+        <button class="btn btn-primary" onclick="confirmHubBooking()">Confirm booking</button>
+      </div>
+    </div>
+
+    <!-- ===== SCREEN 17: Documents ===== -->
+    <div class="screen" id="screen-17">
+      <div class="back-header"><button class="back-btn" onclick="goTo(16)">←</button><span style="font-size:15px;font-weight:700;color:var(--text);">Documents to bring</span></div>
+      <div class="avideo-card" id="avc-17" onclick="toggleAVC('17')">
+        <div class="avideo-inner">
+          <div class="avideo-bg-gradient" style="--vc-from:#0f172a;--vc-to:#334155;"></div>
+          <div class="avideo-wave"></div>
+          <div class="avideo-particle"></div><div class="avideo-particle"></div><div class="avideo-particle"></div><div class="avideo-particle"></div>
+          <div class="avideo-presenter"><div class="avideo-avatar">📄</div></div>
+          <div class="avideo-title">Documents You Must Bring to the Hub</div>
+          <div class="avideo-top-controls">
+            <div class="avideo-lang-btn" onclick="event.stopPropagation();toggleAVCLang('17')">A</div>
+            <button class="avideo-mute-btn" id="mute-17" onclick="event.stopPropagation();toggleAVCMute('17')">🔊</button>
+          </div>
+          <div class="avideo-play-overlay hidden" id="overlay-17"><div class="avideo-big-play">▶</div></div>
+          <div class="avideo-bottom">
+            <button class="avideo-play-pause" id="pp-17" onclick="event.stopPropagation();toggleAVC('17')">⏸</button>
+            <div class="avideo-prog-bar" onclick="event.stopPropagation();seekAVC('17',event)"><div class="avideo-prog-fill" id="fill-17"></div></div>
+            <span class="avideo-time" id="time-17">0:00 / 1:15</span>
+          </div>
+        </div>
+      </div>
+      <div style="padding:10px 20px;background:var(--primary-light);margin:0;"><div style="font-size:13px;color:var(--primary);font-weight:600;">Keep these ready for faster onboarding</div></div>
+      <div style="padding:12px 20px;display:flex;flex-direction:column;gap:10px;">
+        <div class="doc-item" onclick="toggleDocItem(this)"><div class="doc-icon">🪪</div><div class="doc-name">Aadhaar Card</div><div class="doc-check">✓</div></div>
+        <div class="doc-item" onclick="toggleDocItem(this)"><div class="doc-icon">💳</div><div class="doc-name">PAN Card</div><div class="doc-check">✓</div></div>
+        <div class="doc-item" onclick="toggleDocItem(this)"><div class="doc-icon">🚗</div><div class="doc-name">Driving License (Commercial)</div><div class="doc-check">✓</div></div>
+        <div class="doc-item" onclick="toggleDocItem(this)"><div class="doc-icon">📱</div><div class="doc-name">Uber Partner App ID (if any)</div><div class="doc-check">✓</div></div>
+        <div class="doc-item" onclick="toggleDocItem(this)"><div class="doc-icon">📸</div><div class="doc-name">Passport size photo</div><div class="doc-check">✓</div></div>
+      </div>
+      <div style="margin:0 20px 12px;padding:12px;background:var(--bg);border-radius:var(--radius-sm);font-size:13px;color:var(--text-secondary);">🔍 Our team will verify your documents at the hub.</div>
+      <div style="padding:0 20px 20px;"><button class="btn btn-primary" onclick="confirmDocuments()">I will bring all documents</button></div>
+    </div>
+
+    <!-- ===== SCREEN 18: Reminder ===== -->
+    <div class="screen" id="screen-18">
+      <div class="avideo-card" id="avc-18" onclick="toggleAVC('18')">
+        <div class="avideo-inner">
+          <div class="avideo-bg-gradient" style="--vc-from:#7c2d12;--vc-to:#ea580c;"></div>
+          <div class="avideo-wave"></div>
+          <div class="avideo-particle"></div><div class="avideo-particle"></div><div class="avideo-particle"></div><div class="avideo-particle"></div>
+          <div class="avideo-presenter"><div class="avideo-avatar">🎯</div></div>
+          <div class="avideo-title">What to Expect on Your Hub Visit Day</div>
+          <div class="avideo-top-controls">
+            <div class="avideo-lang-btn" onclick="event.stopPropagation();toggleAVCLang('18')">A</div>
+            <button class="avideo-mute-btn" id="mute-18" onclick="event.stopPropagation();toggleAVCMute('18')">🔊</button>
+          </div>
+          <div class="avideo-play-overlay hidden" id="overlay-18"><div class="avideo-big-play">▶</div></div>
+          <div class="avideo-bottom">
+            <button class="avideo-play-pause" id="pp-18" onclick="event.stopPropagation();toggleAVC('18')">⏸</button>
+            <div class="avideo-prog-bar" onclick="event.stopPropagation();seekAVC('18',event)"><div class="avideo-prog-fill" id="fill-18"></div></div>
+            <span class="avideo-time" id="time-18">0:00 / 1:30</span>
+          </div>
+        </div>
+      </div>
+      <div class="reminder-hero">
+        <div class="reminder-emoji">🎯</div>
+        <div class="reminder-title">You're almost there!</div>
+        <div class="result-sub" style="margin-top:4px;">Just 1 step left</div>
+      </div>
+      <div class="reminder-detail">
+        <div style="font-size:13px;color:var(--text-secondary);">Hub visit on</div>
+        <div class="hub" id="reminder-datetime">25 May 2024, 12:00 PM</div>
+        <div class="hub" style="font-size:14px;color:var(--text);font-weight:600;margin-top:2px;" id="reminder-hub">Delhi – Alipur Hub</div>
+      </div>
+      <div style="padding:14px 20px;display:flex;flex-direction:column;gap:8px;">
+        <div class="channel-item" style="cursor:pointer;" onclick="addToCalendarAction()"><span class="channel-icon">📅</span> Add to calendar</div>
+        <div class="channel-item" style="cursor:pointer;" onclick="whatsappReminderAction()"><span class="channel-icon">💬</span> WhatsApp reminder</div>
+        <div class="channel-item" style="cursor:pointer;" onclick="smsReminderAction()"><span class="channel-icon">📱</span> SMS reminder</div>
+      </div>
+      <div style="padding:0 20px 20px;display:flex;flex-direction:column;gap:10px;">
+        <button class="btn btn-primary" onclick="addToCalendarAction()">Add to calendar</button>
+        <div style="font-size:12px;color:var(--text-muted);text-align:center;">You'll get a reminder on WhatsApp and SMS before your visit.</div>
+      </div>
+    </div>
+
+    <!-- ===== SCREEN 19: Messages ===== -->
+    <div class="screen" id="screen-19">
+      <div style="padding:14px 20px 6px;"><div class="section-title">Messages</div></div>
+      <div class="avideo-card" id="avc-19" onclick="toggleAVC('19')">
+        <div class="avideo-inner">
+          <div class="avideo-bg-gradient" style="--vc-from:#1e3a8a;--vc-to:#1d4ed8;"></div>
+          <div class="avideo-wave"></div>
+          <div class="avideo-particle"></div><div class="avideo-particle"></div><div class="avideo-particle"></div><div class="avideo-particle"></div>
+          <div class="avideo-presenter"><div class="avideo-avatar">📱</div></div>
+          <div class="avideo-title">How to Use the Carrum Driver App</div>
+          <div class="avideo-top-controls">
+            <div class="avideo-lang-btn" onclick="event.stopPropagation();toggleAVCLang('19')">A</div>
+            <button class="avideo-mute-btn" id="mute-19" onclick="event.stopPropagation();toggleAVCMute('19')">🔊</button>
+          </div>
+          <div class="avideo-play-overlay hidden" id="overlay-19"><div class="avideo-big-play">▶</div></div>
+          <div class="avideo-bottom">
+            <button class="avideo-play-pause" id="pp-19" onclick="event.stopPropagation();toggleAVC('19')">⏸</button>
+            <div class="avideo-prog-bar" onclick="event.stopPropagation();seekAVC('19',event)"><div class="avideo-prog-fill" id="fill-19"></div></div>
+            <span class="avideo-time" id="time-19">0:00 / 1:00</span>
+          </div>
+        </div>
+      </div>
+      <div style="padding:12px 20px;display:flex;flex-direction:column;gap:12px;">
+        <div class="message-bubble"><div class="msg-sender"><div class="msg-avatar">C</div>Carrum</div><div class="msg-text" id="messages-notif-text">Your hub visit is tomorrow at 12:00 PM. Don't forget your documents.</div><div class="msg-time" id="messages-notif-time">24 May, 10:00 AM</div></div>
+        <div class="message-bubble"><div class="msg-sender"><div class="msg-avatar">C</div>Carrum</div><div class="msg-text">Complete your profile and get priority at the hub.</div><div class="msg-time">23 May, 06:00 PM</div></div>
+        <div class="message-bubble"><div class="msg-sender"><div class="msg-avatar">C</div>Carrum</div><div class="msg-text">Need help? Chat with our onboarding expert.</div><div class="msg-time">22 May, 04:30 PM</div></div>
+      </div>
+      <div style="padding:12px 20px 20px;margin-top:auto;"><button class="btn btn-primary" onclick="goTo(20)">Next</button></div>
+      <div class="bottom-nav">
+        <div class="bnav-item" onclick="goTo(1)"><span class="bnav-icon">🏠</span><span class="bnav-label">Home</span></div>
+        <div class="bnav-item active"><span class="bnav-icon">💬</span><span class="bnav-label">Messages</span></div>
+        <div class="bnav-item" onclick="openHelpModal()"><span class="bnav-icon">🎧</span><span class="bnav-label">Support</span></div>
+        <div class="bnav-item"><span class="bnav-icon">👤</span><span class="bnav-label">Profile</span></div>
+      </div>
+    </div>
+
+    <!-- ===== SCREEN 20: Talk to Expert ===== -->
+    <div class="screen" id="screen-20">
+      <div class="back-header"><button class="back-btn" onclick="goTo(19)">←</button></div>
+      <div class="avideo-card" id="avc-20" onclick="toggleAVC('20')">
+        <div class="avideo-inner">
+          <div class="avideo-bg-gradient" style="--vc-from:#3b0764;--vc-to:#7e22ce;"></div>
+          <div class="avideo-wave"></div>
+          <div class="avideo-particle"></div><div class="avideo-particle"></div><div class="avideo-particle"></div><div class="avideo-particle"></div>
+          <div class="avideo-presenter"><div class="avideo-avatar">👨‍💼</div></div>
+          <div class="avideo-title">Meet Your Onboarding Support Team</div>
+          <div class="avideo-top-controls">
+            <div class="avideo-lang-btn" onclick="event.stopPropagation();toggleAVCLang('20')">A</div>
+            <button class="avideo-mute-btn" id="mute-20" onclick="event.stopPropagation();toggleAVCMute('20')">🔊</button>
+          </div>
+          <div class="avideo-play-overlay hidden" id="overlay-20"><div class="avideo-big-play">▶</div></div>
+          <div class="avideo-bottom">
+            <button class="avideo-play-pause" id="pp-20" onclick="event.stopPropagation();toggleAVC('20')">⏸</button>
+            <div class="avideo-prog-bar" onclick="event.stopPropagation();seekAVC('20',event)"><div class="avideo-prog-fill" id="fill-20"></div></div>
+            <span class="avideo-time" id="time-20">0:00 / 1:00</span>
+          </div>
+        </div>
+      </div>
+      <div class="screen-content" style="padding-top:12px;">
+        <div class="expert-hero"><div class="expert-avatar">👔</div><div class="expert-title">Our experts help you complete your onboarding smoothly.</div></div>
+        <div class="contact-option" onclick="helpCallNow()"><span class="contact-icon">📞</span><div><div class="contact-label">Request a callback</div><div class="contact-desc">We will call you in 2 mins</div></div><span class="contact-arrow">›</span></div>
+        <div class="contact-option" onclick="helpWhatsApp()"><span class="contact-icon">💬</span><div><div class="contact-label">Chat on WhatsApp</div><div class="contact-desc">Get instant help</div></div><span class="contact-arrow">›</span></div>
+        <div class="contact-option" onclick="helpCallNow()"><span class="contact-icon">📱</span><div><div class="contact-label">Call now</div><div class="contact-desc">+91 9555 123 456</div></div><span class="contact-arrow">›</span></div>
+        <div style="text-align:center;font-size:12px;color:var(--text-muted);padding:8px;">⏰ Available: 9 AM – 9 PM</div>
+        <button class="btn btn-primary" onclick="goTo(1)">Back to Home</button>
+      </div>
+      <div class="bottom-nav">
+        <div class="bnav-item" onclick="goTo(1)"><span class="bnav-icon">🏠</span><span class="bnav-label">Home</span></div>
+        <div class="bnav-item" onclick="goTo(19)"><span class="bnav-icon">💬</span><span class="bnav-label">Messages</span></div>
+        <div class="bnav-item active"><span class="bnav-icon">🎧</span><span class="bnav-label">Support</span></div>
+        <div class="bnav-item"><span class="bnav-icon">👤</span><span class="bnav-label">Profile</span></div>
+      </div>
+    </div>
+
+  </div><!-- /phone -->
+
+  <!-- EXTERNAL NAV -->
+  <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;justify-content:center;">
+    <button class="nav-arrow" onclick="prevScreen()">←</button>
+    <div class="screen-counter" id="screenCounter">1 / 20</div>
+    <button class="nav-arrow" onclick="nextScreen()">→</button>
+  </div>
+  <div style="display:flex;flex-wrap:wrap;gap:6px;max-width:480px;justify-content:center;" id="dotContainer"></div>
+</div>
+
+<script>
+  // ===== SCREEN STATE =====
+  let currentScreen = 1;
+  const totalScreens = 20;
+  let selectedGoal = 'flexible';
+  let selectedExp = 'mid';
+  let currentLanguage = 'en';
+  let bookingState = { hub: 'Delhi – Alipur Hub', dateNum: '25', dateDay: 'Sat', timeSlot: '12:00 PM' };
+
+  // Screens where Help btn should show (after OTP page = screen 3 onwards + ineligible)
+  const helpVisibleScreens = [3,4,5,6,7,8,9,10,11,12,'doc-upload',13,14,15,16,17,18,19,20,'ineligible'];
+
+  // Build dot nav
+  const dotContainer = document.getElementById('dotContainer');
+  for (let i = 1; i <= totalScreens; i++) {
+    const d = document.createElement('div');
+    d.className = 'page-dot' + (i === 1 ? ' active' : '');
+    d.id = 'dot-' + i;
+    d.title = 'Screen ' + i;
+    d.onclick = () => goTo(i);
+    dotContainer.appendChild(d);
+  }
+
+  function goTo(n) {
+    // Pause all videos
+    Object.keys(avcState).forEach(k => { if (avcState[k].playing) pauseAVC(k); });
+
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.page-dot').forEach(d => d.classList.remove('active'));
+
+    let targetId = typeof n === 'number' ? 'screen-' + n : n;
+    const el = document.getElementById(targetId);
+    if (el) el.classList.add('active');
+
+    if (typeof n === 'number') {
+      currentScreen = n;
+      const dot = document.getElementById('dot-' + n);
+      if (dot) dot.classList.add('active');
+      document.getElementById('screenCounter').textContent = n + ' / ' + totalScreens;
+    } else {
+      document.getElementById('screenCounter').textContent = n.toUpperCase();
+    }
+
+    // Help button visibility
+    const helpBtn = document.getElementById('helpBtn');
+    const shouldShow = typeof n === 'number' ? helpVisibleScreens.includes(n) : helpVisibleScreens.includes(n);
+    helpBtn.className = 'help-btn' + (shouldShow ? ' visible' : '');
+
+    // Auto-play video on this screen
+    const avcKey = typeof n === 'number' ? String(n) : n;
+    if (document.getElementById('avc-' + avcKey)) {
+      setTimeout(() => startAVC(avcKey), 400);
+    }
+
+    // OTP
+    if (n !== 'screen-otp') clearInterval(otpInterval);
+    if (n === 'screen-otp') setTimeout(() => document.getElementById('otp-1').focus(), 300);
+  }
+
+  function nextScreen() { goTo(currentScreen < totalScreens ? currentScreen + 1 : 1); }
+  function prevScreen() { goTo(currentScreen > 1 ? currentScreen - 1 : totalScreens); }
+
+  // ===== TOAST =====
+  function showToast(msg, icon = '✅') {
+    const t = document.getElementById('appToast');
+    t.querySelector('.toast-msg').textContent = msg;
+    t.querySelector('.toast-icon').textContent = icon;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2500);
+  }
+
+  // ===== HELP MODAL =====
+  function openHelpModal() { document.getElementById('helpModal').classList.add('show'); }
+  function closeHelpModal(e) {
+    if (!e || e.target === document.getElementById('helpModal') || e.currentTarget.tagName === 'BUTTON') {
+      document.getElementById('helpModal').classList.remove('show');
+    }
+  }
+  function helpCallNow() {
+    document.getElementById('helpModal').classList.remove('show');
+    showToast('Connecting you to +91 9555 123 456…', '📞');
+  }
+  function helpRequestCallback() {
+    document.getElementById('helpModal').classList.remove('show');
+    showToast('Callback requested! We\'ll call in 2 mins.', '📲');
+  }
+  function helpWhatsApp() {
+    document.getElementById('helpModal').classList.remove('show');
+    showToast('Opening WhatsApp support…', '💬');
+  }
+
+  // ===== AUTO VIDEO CARD ENGINE =====
+  // Each card has: id (string), progress (0-100), playing (bool), muted (bool), timer
+  const avcState = {};
+  const avcDurations = {
+    '1':'1:30','2':'0:45','3':'1:00','4':'1:15','5':'1:00',
+    '6':'1:30','6b':'2:00','7':'1:00','8':'1:30','9':'2:00',
+    '10':'1:30','11':'1:00','12':'2:00','doc-upload':'0:45','13':'1:00','14':'0:45',
+    '15':'0:45','16':'1:00','17':'1:15','18':'1:30','19':'1:00','20':'1:00'
+  };
+
+  function getAVCState(id) {
+    if (!avcState[id]) avcState[id] = { progress: 0, playing: false, muted: false, timer: null };
+    return avcState[id];
+  }
+
+  function startAVC(id) {
+    const s = getAVCState(id);
+    if (s.playing) return;
+    s.playing = true;
+    const overlay = document.getElementById('overlay-' + id);
+    const pp = document.getElementById('pp-' + id);
+    if (overlay) { overlay.classList.remove('visible'); overlay.classList.add('hidden'); }
+    if (pp) pp.textContent = '⏸';
+    clearInterval(s.timer);
+    s.timer = setInterval(() => {
+      s.progress = Math.min(100, s.progress + 0.5);
+      updateAVCUI(id);
+      if (s.progress >= 100) {
+        pauseAVC(id);
+      }
+    }, 150);
+  }
+
+  function pauseAVC(id) {
+    const s = getAVCState(id);
+    s.playing = false;
+    clearInterval(s.timer);
+    const pp = document.getElementById('pp-' + id);
+    const overlay = document.getElementById('overlay-' + id);
+    if (pp) pp.textContent = '▶';
+    if (overlay) { overlay.classList.remove('hidden'); overlay.classList.add('visible'); }
+  }
+
+  function toggleAVC(id) {
+    const s = getAVCState(id);
+    if (s.playing) pauseAVC(id);
+    else { if (s.progress >= 100) s.progress = 0; startAVC(id); }
+  }
+
+  function toggleAVCMute(id) {
+    const s = getAVCState(id);
+    s.muted = !s.muted;
+    const btn = document.getElementById('mute-' + id);
+    if (btn) btn.textContent = s.muted ? '🔇' : '🔊';
+    showToast(s.muted ? 'Video muted' : 'Video unmuted', s.muted ? '🔇' : '🔊');
+  }
+
+  function toggleAVCLang(id) {
+    const langs = ['A', 'ह', 'த'];
+    const btn = document.querySelector('#avc-' + id + ' .avideo-lang-btn');
+    if (!btn) return;
+    const idx = langs.indexOf(btn.textContent);
+    btn.textContent = langs[(idx + 1) % langs.length];
+    showToast('Language switched!', '🌐');
+  }
+
+  function seekAVC(id, e) {
+    const bar = e.currentTarget;
+    const rect = bar.getBoundingClientRect();
+    const s = getAVCState(id);
+    s.progress = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100));
+    updateAVCUI(id);
+    if (!s.playing) startAVC(id);
+  }
+
+  function updateAVCUI(id) {
+    const fill = document.getElementById('fill-' + id);
+    const timeEl = document.getElementById('time-' + id);
+    const s = getAVCState(id);
+    if (fill) fill.style.width = s.progress + '%';
+    if (timeEl) {
+      const dur = avcDurations[id] || '1:00';
+      const parts = dur.split(':');
+      const totalSec = parseInt(parts[0]) * 60 + parseInt(parts[1]);
+      const current = Math.floor((s.progress / 100) * totalSec);
+      const m = Math.floor(current / 60);
+      const sec = current % 60;
+      timeEl.textContent = m + ':' + (sec < 10 ? '0' : '') + sec + ' / ' + dur;
+    }
+  }
+
+  // ===== OTP =====
+  let otpInterval;
+  function requestOtp() {
+    const ph = document.getElementById('phone-input').value.trim();
+    if (!ph || ph.length < 10) { showToast('Please enter a valid phone number', '⚠️'); return; }
+    document.getElementById('otp-phone-display').textContent = '+91 ' + ph;
+    showToast('OTP sent!', '📩');
+    goTo('screen-otp');
+    startOtpTimer();
+  }
+  function startOtpTimer() {
+    let t = 59;
+    document.getElementById('otp-timer-label').style.display = 'inline';
+    document.getElementById('resend-btn').style.display = 'none';
+    document.getElementById('otp-timer').textContent = t + 's';
+    clearInterval(otpInterval);
+    otpInterval = setInterval(() => {
+      t--;
+      if (t <= 0) { clearInterval(otpInterval); document.getElementById('otp-timer-label').style.display = 'none'; document.getElementById('resend-btn').style.display = 'inline'; }
+      else document.getElementById('otp-timer').textContent = t + 's';
+    }, 1000);
+  }
+  function focusNext(el, nextId) { if (el.value.length === 1) document.getElementById(nextId).focus(); }
+  function focusPrev(el, e, prevId) { if (e.key === 'Backspace' && el.value.length === 0 && prevId) document.getElementById(prevId).focus(); }
+  function checkAndSubmitOtp() { if (['otp-1','otp-2','otp-3','otp-4'].every(id => document.getElementById(id).value)) verifyOtp(); }
+  function verifyOtp() { showToast('Phone verified!'); for (let i=1;i<=4;i++) document.getElementById('otp-'+i).value=''; goTo(3); }
+  function resendOtp() { showToast('New OTP sent!', '📩'); for (let i=1;i<=4;i++) document.getElementById('otp-'+i).value=''; document.getElementById('otp-1').focus(); startOtpTimer(); }
+
+  // ===== PLAN LOGIC =====
+  const plans = {
+    'Plan A': { name:'Plan A', tagline:'Flexible earning with rental vehicle', emoji:'🚙', features:['Flexible hours','Start quickly','No car ownership'], range:'₹18,000 – ₹30,000', rangeSub:'Potential weekly earning', suitTitle:'Why Plan A suits you', suitDesc:'Flexible earnings on your own terms. Ideal for high-demand hours.', opp:'Plan B' },
+    'Plan B': { name:'Plan B', tagline:'Stable monthly income with less risk', emoji:'👔', features:['Fixed weekly salary','Performance bonuses','Assigned shift schedule'], range:'₹10,000 – ₹15,000', rangeSub:'Guaranteed weekly salary + incentives', suitTitle:'Why Plan B suits you', suitDesc:'Stable guaranteed income and structured working hours.', opp:'Plan A' },
+    'Plan Pro': { name:'Plan Pro', tagline:'High-mileage premium rental for pros', emoji:'🏎', features:['Lower rental rates','Priority support','Unlimited km'], range:'₹24,000 – ₹38,000', rangeSub:'Potential weekly earning (high-trip drivers)', suitTitle:'Why Plan Pro suits you', suitDesc:'3+ years experience gets you lower fees and premium vehicles.', opp:'Plan B' }
+  };
+  let recPlanActive = 'Plan A', comparingPlan = false;
+
+  function selectOption(el, goal) { el.closest('.screen-content').querySelectorAll('.option-card').forEach(c=>c.classList.remove('selected')); el.classList.add('selected'); selectedGoal=goal; }
+  function selectExp(el, exp) { el.closest('.exp-row').querySelectorAll('.exp-chip').forEach(c=>c.classList.remove('selected')); el.classList.add('selected'); selectedExp=exp; }
+  function generatePlanRecommendation() {
+    let key = selectedGoal==='stable' ? 'Plan B' : selectedExp==='pro' ? 'Plan Pro' : 'Plan A';
+    recPlanActive = key; comparingPlan = false;
+    renderPlan(key); goTo(5);
+  }
+  function renderPlan(key) {
+    const p = plans[key];
+    document.getElementById('rec-plan-name').textContent = p.name;
+    document.getElementById('rec-plan-tagline').textContent = p.tagline;
+    document.getElementById('rec-plan-emoji').textContent = p.emoji;
+    const f = document.getElementById('rec-plan-features'); f.innerHTML='';
+    p.features.forEach(feat => { const d=document.createElement('div'); d.className='plan-feature'; d.textContent=feat; f.appendChild(d); });
+    document.getElementById('rec-plan-range').textContent = p.range;
+    document.getElementById('rec-plan-range-sub').textContent = p.rangeSub;
+    document.getElementById('rec-plan-suitability-title').textContent = p.suitTitle;
+    document.getElementById('rec-plan-suitability-desc').textContent = p.suitDesc;
+    document.getElementById('rec-compare-link').textContent = 'Compare with ' + p.opp;
+  }
+  function toggleComparePlan() {
+    comparingPlan = !comparingPlan;
+    if (comparingPlan) { renderPlan(plans[recPlanActive].opp); document.getElementById('rec-compare-link').textContent = 'Back to ' + recPlanActive; }
+    else { renderPlan(recPlanActive); }
+  }
+
+  // ===== ELIGIBILITY =====
+  let currentEligibilityStep = 1;
+  const elState = { city:'Delhi', dl:null, age:null, android:null, uber:null };
+  function selectEligibilityOption(el, cat, val) { el.parentNode.querySelectorAll('.option-card').forEach(c=>c.classList.remove('selected')); el.classList.add('selected'); elState[cat]=val; }
+  function nextEligibilityStep() {
+    if (currentEligibilityStep===1) { const c=document.getElementById('eligibility-city').value; if(!c){showToast('Select your city!','⚠️');return;} elState.city=c; }
+    else if (currentEligibilityStep===2 && elState.dl===null) { showToast('Select license type!','⚠️'); return; }
+    else if (currentEligibilityStep===3 && elState.age===null) { showToast('Confirm your age!','⚠️'); return; }
+    else if (currentEligibilityStep===4 && elState.android===null) { showToast('Confirm phone type!','⚠️'); return; }
+    document.getElementById('el-step-'+currentEligibilityStep).style.display='none';
+    currentEligibilityStep++;
+    updateElWizard();
+  }
+  function prevEligibilityStep() { if(currentEligibilityStep>1){document.getElementById('el-step-'+currentEligibilityStep).style.display='none'; currentEligibilityStep--; updateElWizard();} }
+  function updateElWizard() {
+    document.getElementById('el-step-'+currentEligibilityStep).style.display='flex';
+    document.getElementById('el-wizard-step-label').textContent='Step '+currentEligibilityStep+' of 5';
+    document.querySelectorAll('#el-progress-steps .progress-step').forEach((s,i)=>s.classList.toggle('done',i<currentEligibilityStep));
+  }
+  function evalEligibility() {
+    if (elState.uber===null) { showToast('Select Uber status!','⚠️'); return; }
+    if (!elState.dl) showIneligible('Commercial DL Required','Government rules require a Commercial DL to drive commercial cabs.');
+    else if (!elState.age) showIneligible('Age requirement not met','Must be at least 21 years old to drive commercial vehicles.');
+    else if (elState.uber===false) showIneligible('Uber partnership required','Carrum operates strictly with Uber. Driving on Uber is mandatory.');
+    else { showToast('Congratulations! You are eligible.','🎉'); goTo(7); }
+  }
+  function showIneligible(reason, details) { document.getElementById('ineligible-reason').textContent=reason; document.getElementById('ineligible-details').textContent=details; goTo('screen-ineligible'); }
+  function requestCallbackIneligible() { showToast('Callback scheduled! We\'ll contact you in 2 mins.','📞'); }
+
+  // ===== FAQ =====
+  function toggleFaq(el) { const item=el.closest('.faq-item'); const open=item.classList.contains('open'); document.querySelectorAll('.faq-item').forEach(i=>i.classList.remove('open')); if(!open)item.classList.add('open'); }
+
+  // ===== CALCULATOR =====
+  function updateCalc() {
+    const h=parseInt(document.getElementById('hoursSlider').value);
+    const d=parseInt(document.getElementById('daysSlider').value);
+    document.getElementById('hoursVal').textContent=h+' hrs';
+    document.getElementById('daysVal').textContent=d+' days';
+    const w=h*d*400; document.getElementById('weeklyEarning').textContent='₹'+w.toLocaleString('en-IN');
+    document.getElementById('monthlyEarning').textContent='₹'+(w*4).toLocaleString('en-IN');
+  }
+
+  // ===== BOOKING =====
+  function selectDateChip(el,num,day) { el.parentNode.querySelectorAll('.date-chip').forEach(c=>c.classList.remove('selected')); el.classList.add('selected'); bookingState.dateNum=num; bookingState.dateDay=day; }
+  function selectTimeChip(el,time) { el.parentNode.querySelectorAll('.time-chip').forEach(c=>c.classList.remove('selected')); el.classList.add('selected'); bookingState.timeSlot=time; }
+  function confirmHubBooking() {
+    bookingState.hub = document.getElementById('booking-hub-select').value;
+    document.getElementById('reminder-datetime').textContent=bookingState.dateNum+' May 2024, '+bookingState.timeSlot+' ('+bookingState.dateDay+')';
+    document.getElementById('reminder-hub').textContent=bookingState.hub;
+    document.getElementById('messages-notif-text').textContent='Your hub visit is '+bookingState.dateNum+' May at '+bookingState.timeSlot+'. Please carry all original documents.';
+    showToast('Hub slot booked!','🏢'); goTo(17);
+  }
+
+  // ===== DOCS =====
+  function toggleDocItem(el) { el.classList.toggle('checked'); }
+  function confirmDocuments() {
+    const total=document.querySelectorAll('#screen-17 .doc-item').length;
+    const checked=document.querySelectorAll('#screen-17 .doc-item.checked').length;
+    if(checked<total){showToast('Please check all '+total+' documents!','⚠️');return;}
+    showToast('Documents confirmed!','📋'); goTo(18);
+  }
+
+  // ===== REMINDER =====
+  function addToCalendarAction() { showToast('Added to calendar!','📅'); goTo(19); }
+  function whatsappReminderAction() { showToast('WhatsApp reminder set!','💬'); }
+  function smsReminderAction() { showToast('SMS reminder set!','📱'); }
+
+  // ===== LANGUAGE =====
+  function setLanguage(lang) {
+    currentLanguage = lang;
+    document.querySelectorAll('.lang-chip').forEach(c => {
+      c.classList.toggle('active', (lang==='en'&&c.textContent==='English')||(lang==='hi'&&c.textContent==='हिंदी')||(lang==='ta'&&c.textContent==='தமிழ்'));
+    });
+    showToast(lang==='en'?'Language: English':lang==='hi'?'भाषा: हिंदी':'மொழி: தமிழ்','🌐');
+  }
+
+  // ===== KEYBOARD =====
+  document.addEventListener('keydown', e => {
+    if (e.key==='ArrowRight' && !document.querySelector('.help-modal.show')) nextScreen();
+    if (e.key==='ArrowLeft' && !document.querySelector('.help-modal.show')) prevScreen();
+    if (e.key==='Escape') document.getElementById('helpModal').classList.remove('show');
+  });
+
+  // Auto-play on screen 1 on load
+  setTimeout(() => startAVC('1'), 600);
+  // ===== DOC UPLOAD =====
+  let docsUploaded = { aadhaar: false, dl: false };
+  function fakeUpload(type) {
+    if (docsUploaded[type]) return;
+    const card = document.getElementById('doc-' + type);
+    const sub = document.getElementById('sub-' + type);
+    const icon = document.getElementById('icon-' + type);
+    icon.textContent = '⏳';
+    sub.textContent = 'Uploading...';
+    setTimeout(() => {
+      docsUploaded[type] = true;
+      card.classList.add('uploaded');
+      icon.textContent = '✅';
+      sub.textContent = 'Verified successfully';
+      if (docsUploaded.aadhaar && docsUploaded.dl) {
+        const btn = document.getElementById('btn-doc-submit');
+        btn.style.opacity = '1';
+        btn.style.pointerEvents = 'auto';
+      }
+      showToast(type === 'aadhaar' ? 'Aadhaar verified!' : 'DL verified!', '📄');
+    }, 1500);
+  }
+</script>
+</body>
+</html>
